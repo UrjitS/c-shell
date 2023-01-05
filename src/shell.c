@@ -2,5 +2,5 @@
 #include <stdio.h>
 
 void run_shell(void) {
-    printf("Hello\n");
+    printf("Hello World\n");
 }

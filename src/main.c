@@ -6,9 +6,7 @@
 #include <dc_env/env.h>
 #include <dc_error/error.h>
 #include <getopt.h>
-#include <stdio.h>
 #include <stdlib.h>
-#include <memory.h>
 #include <dc_c/dc_stdlib.h>
 #include <dc_c/dc_string.h>
 #include "shell.h"
@@ -37,7 +35,7 @@ int main(int argc, char *argv[])
     int ret_val;
 
     // Set the tracer to trace through the function calls
-    //    tracer = trace_reporter; // Trace through function calls
+//    tracer = dc_env_default_tracer; // Trace through function calls
     tracer = NULL; // Don't trace through function calls
 
     err = dc_error_create(false); // Create error struct
@@ -78,7 +76,6 @@ static int run(const struct dc_env *env, struct dc_error *err, struct dc_applica
 
 static struct dc_application_settings *create_settings(const struct dc_env *env, struct dc_error *err)
 {
-    static bool default_verbose = false;
     struct application_settings *settings;
 
     DC_TRACE(env);
@@ -138,11 +135,6 @@ static int destroy_settings(const struct dc_env *env,
     dc_setting_string_destroy(env, &app_settings->message);
     dc_free(env, app_settings->opts.opts);
     dc_free(env, *psettings);
-//
-//    if(env->null_free)
-//    {
-//        *psettings = NULL;
-//    }
 
     return 0;
 }
