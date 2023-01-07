@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-
+#include "state.h"
 int run_shell(const struct dc_env *env, struct dc_error *err) {
 
     printf("Hello World\n");
@@ -35,10 +35,14 @@ int run_shell(const struct dc_env *env, struct dc_error *err) {
 
     if(dc_error_has_no_error(err))
     {
+        // Create a state to pass around
+        struct state * state;
+        state = malloc(sizeof(struct state *));
+
         int from_state;
         int to_state;
 
-        dc_fsm_run(env, err, fsm_info, &from_state, &to_state, NULL, transitions);
+        dc_fsm_run(env, err, fsm_info, &from_state, &to_state, state, transitions);
         dc_fsm_info_destroy(env, &fsm_info);
     }
 

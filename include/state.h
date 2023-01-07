@@ -12,7 +12,7 @@ struct state {
     regex_t * err_redirect_regex;  // used to find output redirection: 2>[>] path
     char ** path;                  // An array of directories to search for external commands
     char * prompt;                 // Prompt to display to the user, defaults to $
-    size_t max_line_length;        // The longest possible command line
+    long max_line_length;        // The longest possible command line
     char * current_line;           // The current command line
     size_t current_line_length;    // The length of the current command line
     struct command * command;      // The command to execute
