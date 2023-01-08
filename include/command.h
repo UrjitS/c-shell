@@ -1,7 +1,7 @@
 #ifndef OPEN_COMMAND_H
 #define OPEN_COMMAND_H
 
-
+#include "state.h"
 #include <stdlib.h>
 #include <stdbool.h>
 
@@ -52,5 +52,9 @@ struct command
      */
     int exit_code;
 };
+
+void regex_error(const struct dc_env * env, struct dc_error * err, struct state * state);
+void regex_in(const struct dc_env * env, struct dc_error * err, struct state * state);
+void regex_out(const struct dc_env * env, struct dc_error * err, struct state * state);
 
 #endif //OPEN_COMMAND_H

@@ -35,7 +35,7 @@ int separate_commands(const struct dc_env *env, struct dc_error *err, void *arg)
 int parse_commands(const struct dc_env *env, struct dc_error *err, void *arg);
 int parse_command(const struct dc_env *env, struct dc_error *err, void *arg);
 int execute_commands(const struct dc_env *env, struct dc_error *err, void *arg);
-int builtin_cd(const struct dc_env *env, struct dc_error *err, void *arg);
+void builtin_cd(const struct dc_env *env, struct dc_error *err, void *arg);
 int execute(const struct dc_env *env, struct dc_error *err, void *arg);
 int redirect(const struct dc_env *env, struct dc_error *err, void *arg);
 int handle_run_error(const struct dc_env *env, struct dc_error *err, void *arg);

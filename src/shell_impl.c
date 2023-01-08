@@ -1,8 +1,10 @@
 #include <dc_util/filesystem.h>
 #include <dc_posix/dc_stdio.h>
+#include <dc_posix//dc_unistd.h>
 #include <dc_posix/dc_string.h>
 #include <dc_posix/dc_stdlib.h>
 #include <dc_util/strings.h>
+#include <dc_util/path.h>
 #include "shell_impl.h"
 #include "command.h"
 #include "state.h"
@@ -15,8 +17,9 @@
 char *set_prompt(const struct dc_env *env);
 char **get_path(const struct dc_env *env);
 
+
 int init_state(const struct dc_env *env, struct dc_error *err, void *arg) {
-    regex_t regex;
+
     // Get the state from arg
     struct state * state = (struct state *) arg;
 
@@ -24,13 +27,26 @@ int init_state(const struct dc_env *env, struct dc_error *err, void *arg) {
     state->max_line_length = sysconf(_SC_ARG_MAX);
 
     // Set all the regex values
-    regcomp(&regex, "[ \\t\\f\\v]<.*", REG_EXTENDED);
-    regcomp(&regex, "[ \\t\\f\\v][1^2]?>[>]?.*", REG_EXTENDED);
-    regcomp(&regex, "[ \\t\\f\\v]2>[>]?.*", REG_EXTENDED);
+    state->in_redirect_regex = dc_malloc(env, err, sizeof(regex_t));
+    if (dc_error_has_error(err)) {
+        state->fatal_error = true;
+        return ERROR;
+    }
+    regcomp(state->in_redirect_regex, "[ \\t\\f\\v]<.*", REG_EXTENDED);
 
-    state->in_redirect_regex = &regex;
-    state->out_redirect_regex = &regex;
-    state->err_redirect_regex = &regex;
+    state->out_redirect_regex = dc_malloc(env, err, sizeof(regex_t));
+    if (dc_error_has_error(err)) {
+        state->fatal_error = true;
+        return ERROR;
+    }
+    regcomp(state->out_redirect_regex, "[ \\t\\f\\v][1^2]?>[>]?.*", REG_EXTENDED);
+
+    state->err_redirect_regex = dc_malloc(env, err, sizeof(regex_t));
+    if (dc_error_has_error(err)) {
+        state->fatal_error = true;
+        return ERROR;
+    }
+    regcomp(state->err_redirect_regex, "[ \\t\\f\\v]2>[>]?.*", REG_EXTENDED);
 
     // Set the path
     state->path = get_path(env);
@@ -44,12 +60,6 @@ int init_state(const struct dc_env *env, struct dc_error *err, void *arg) {
     state->current_line_length = 0;
     state->std_in = stdin;
     state->std_out = stdout;
-
-    // Nothing updates to err struct so might not need to check
-//    if (dc_error_has_error(err)) {
-//        state->fatal_error = true;
-//        return ERROR;
-//    }
 
     return READ_COMMANDS;
 }
@@ -170,61 +180,121 @@ int separate_commands(const struct dc_env *env, struct dc_error *err, void *arg)
     state->command->stdout_overwrite = false;
     state->command->stderr_overwrite = false;
 
-    printf("%s\n", state->command->line);
-
     return PARSE_COMMANDS;
-
 }
 
 int parse_commands(const struct dc_env *env, struct dc_error *err, void *arg) {
-//    printf("ERROR\n");
+    // Get the state from arg
+    struct state * state = (struct state *) arg;
     // Call parse_command()
-    // if an error return ERROR else
+    parse_command(env, err, state);
+
+    // if an error return ERROR else cont
+    if (dc_error_has_error(err)) {
+        return ERROR;
+    }
+
     return EXECUTE_COMMANDS;
 
 }
+
 int parse_command(const struct dc_env *env, struct dc_error *err, void *arg) {
-     printf("ERROR\n");
+    // Get the state from arg
+    struct state * state = (struct state *) arg;
+    regex_error(env, err, state);
+    regex_out(env, err, state);
+    regex_in(env, err, state);
 
-    return DC_FSM_EXIT;
+    return EXECUTE_COMMANDS;
 
 }
+
 int execute_commands(const struct dc_env *env, struct dc_error *err, void *arg) {
-//     printf("ERROR\n");
+    // Get the state from arg
+    struct state * state = (struct state *) arg;
 
-     return DC_FSM_EXIT;
+    if (dc_strcmp(env, state->command->command, "cd") == 0) {
+        builtin_cd(env, err, state);
+    }
+    else if (dc_strcmp(env,state->command->command, "exit") == 0) {
+        return EXIT;
+    }
+    else {
+        execute(env, err, state);
+        if (dc_error_has_error(err)) {
+            fprintf(state->std_out, "Exit Code: %d\n", state->command->exit_code);
+            state->fatal_error = true;
+        }
+    }
 
+    if (state->fatal_error == true) {
+        return ERROR;
+    }
+
+    return RESET_STATE;
 }
-int builtin_cd(const struct dc_env *env, struct dc_error *err, void *arg) {
-     printf("ERROR\n");
 
-     return DC_FSM_EXIT;
+void builtin_cd(const struct dc_env *env, struct dc_error *err, void *arg) {
+    // Get the state from arg
+    struct state * state = (struct state *) arg;
 
+    char * path;
+    if (state->command->argv[1] == NULL) {
+        dc_expand_path(env, err, &path, "~/");
+        dc_chdir(env, err, path);
+    } else {
+        dc_chdir(env, err, state->command->argv[1]);
+        path = strdup(state->command->argv[1]);
+    }
+
+    if (dc_error_has_error(err)) {
+        if (dc_error_is_errno(err, EACCES)) {
+            fprintf(state->std_out, "%s: Access Permission Denied\n", path);
+        }
+        else if (dc_error_is_errno(err, ELOOP)) {
+            fprintf(state->std_out, "%s: Too Many Symbolic Links Encountered\n", path);
+        }
+        else if (dc_error_is_errno(err, ENAMETOOLONG)) {
+            fprintf(state->std_out, "%s: Given Name Too Long\n", path);
+        }
+        else if (dc_error_is_errno(err, ENOENT)) {
+            fprintf(state->std_out, "%s: Does Not Exist\n", path);
+        }
+        else if (dc_error_is_errno(err, ENOTDIR)) {
+            fprintf(state->std_out, "%s: Is Not A Directory\n", path);
+        }
+        state->command->exit_code = 1;
+    } else {
+        state->command->exit_code = 0;
+    }
+
+    free(path);
 }
+
 int execute(const struct dc_env *env, struct dc_error *err, void *arg) {
      printf("ERROR\n");
 
      return DC_FSM_EXIT;
-
 }
+
 int redirect(const struct dc_env *env, struct dc_error *err, void *arg) {
      printf("ERROR\n");
 
      return DC_FSM_EXIT;
-
 }
+
 int handle_run_error(const struct dc_env *env, struct dc_error *err, void *arg) {
      printf("ERROR\n");
 
      return DC_FSM_EXIT;
-
 }
+
 int do_exit(const struct dc_env *env, struct dc_error *err, void *arg) {
      printf("ERROR\n");
 
      return DC_FSM_EXIT;
-
 }
+
 int do_reset_state(const struct dc_env *env, struct dc_error *err, void *arg) {
     // Get the state from arg
     struct state * state = (struct state *) arg;
@@ -266,11 +336,10 @@ int handle_error(const struct dc_env *env, struct dc_error *err, void *arg) {
      printf("ERROR\n");
 
      return DC_FSM_EXIT;
-
 }
+
 int destroy_state(const struct dc_env *env, struct dc_error *err, void *arg) {
      printf("ERROR\n");
 
      return DC_FSM_EXIT;
-
 }
