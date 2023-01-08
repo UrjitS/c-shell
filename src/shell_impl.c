@@ -4,6 +4,7 @@
 #include <dc_posix/dc_stdlib.h>
 #include <dc_util/strings.h>
 #include "shell_impl.h"
+#include "command.h"
 #include "state.h"
 #include "shell.h"
 #include <unistd.h>
@@ -196,11 +197,42 @@ int do_exit(const struct dc_env *env, struct dc_error *err, void *arg) {
 
 }
 int do_reset_state(const struct dc_env *env, struct dc_error *err, void *arg) {
-     printf("ERROR\n");
+    // Get the state from arg
+    struct state * state = (struct state *) arg;
 
-     return DC_FSM_EXIT;
+    state->fatal_error = false;
+    state->current_line_length = 0;
+    state->current_line = NULL;
+    free(state->current_line);
 
+    if (state->command != NULL) {
+        for (size_t i = 0; i < state->command->argc; i++) {
+            free(state->command->argv[i]);
+            state->command->argv[i] = NULL;
+        }
+        state->command->argc = 0;
+        state->command->exit_code = 0;
+
+        state->command->line = NULL;
+        state->command->command = NULL;
+        state->command->argv = NULL;
+        state->command->stdin_file = NULL;
+        state->command->stdout_file = NULL;
+        state->command->stderr_file = NULL;
+
+        free(state->command->line);
+        free(state->command->command);
+        free(state->command->stdin_file);
+        free(state->command->stdout_file);
+        free(state->command->stderr_file);
+    }
+
+    state->command = NULL;
+    dc_error_reset(err);
+
+    return READ_COMMANDS;
 }
+
 int handle_error(const struct dc_env *env, struct dc_error *err, void *arg) {
      printf("ERROR\n");
 
