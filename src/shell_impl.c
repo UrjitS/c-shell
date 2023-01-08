@@ -143,15 +143,44 @@ int separate_commands(const struct dc_env *env, struct dc_error *err, void *arg)
     // Get the state from arg
     struct state * state = (struct state *) arg;
 
-    printf("%s\n", state->current_line);
+    // Create a new command object and zero it out
+    state->command = dc_calloc(env, err, 1, sizeof(*state->command));
+    if (dc_error_has_error(err)) {
+        state->fatal_error = true;
+        return ERROR;
+    }
 
-    return DC_FSM_EXIT;
+    // Copy the state.current_line to the state.command.line
+    state->command->line = dc_strdup(env, err, state->current_line);
+    if (dc_error_has_error(err)) {
+        state->fatal_error = true;
+        return ERROR;
+    }
+
+    // Initialize the rest to default values
+    state->command->argc = 0;
+    state->command->exit_code = 0;
+
+    state->command->argv = NULL;
+    state->command->command = NULL;
+    state->command->stdin_file = NULL;
+    state->command->stdout_file = NULL;
+    state->command->stderr_file = NULL;
+
+    state->command->stdout_overwrite = false;
+    state->command->stderr_overwrite = false;
+
+    printf("%s\n", state->command->line);
+
+    return PARSE_COMMANDS;
 
 }
-int parse_commands(const struct dc_env *env, struct dc_error *err, void *arg) {
-     printf("ERROR\n");
 
-      return DC_FSM_EXIT;
+int parse_commands(const struct dc_env *env, struct dc_error *err, void *arg) {
+//    printf("ERROR\n");
+    // Call parse_command()
+    // if an error return ERROR else
+    return EXECUTE_COMMANDS;
 
 }
 int parse_command(const struct dc_env *env, struct dc_error *err, void *arg) {
@@ -161,7 +190,7 @@ int parse_command(const struct dc_env *env, struct dc_error *err, void *arg) {
 
 }
 int execute_commands(const struct dc_env *env, struct dc_error *err, void *arg) {
-     printf("ERROR\n");
+//     printf("ERROR\n");
 
      return DC_FSM_EXIT;
 
