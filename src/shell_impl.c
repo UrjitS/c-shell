@@ -17,6 +17,9 @@
 char *set_prompt(const struct dc_env *env);
 char **get_path(const struct dc_env *env);
 
+regex_t in_regex;
+regex_t out_regex;
+regex_t err_regex;
 
 int init_state(const struct dc_env *env, struct dc_error *err, void *arg) {
 
@@ -26,27 +29,15 @@ int init_state(const struct dc_env *env, struct dc_error *err, void *arg) {
     // Set maximum line length
     state->max_line_length = sysconf(_SC_ARG_MAX);
 
-    // Set all the regex values
-    state->in_redirect_regex = dc_malloc(env, err, sizeof(regex_t));
-    if (dc_error_has_error(err)) {
-        state->fatal_error = true;
-        return ERROR;
-    }
-    regcomp(state->in_redirect_regex, "[ \\t\\f\\v]<.*", REG_EXTENDED);
+    // Set all the in_regex values
+    regcomp(&in_regex, "[ \\t\\f\\v]<.*", REG_EXTENDED);
+    state->in_redirect_regex = &in_regex;
 
-    state->out_redirect_regex = dc_malloc(env, err, sizeof(regex_t));
-    if (dc_error_has_error(err)) {
-        state->fatal_error = true;
-        return ERROR;
-    }
-    regcomp(state->out_redirect_regex, "[ \\t\\f\\v][1^2]?>[>]?.*", REG_EXTENDED);
+    regcomp(&out_regex, "[ \\t\\f\\v][1^2]?>[>]?.*", REG_EXTENDED);
+    state->out_redirect_regex = &out_regex;
 
-    state->err_redirect_regex = dc_malloc(env, err, sizeof(regex_t));
-    if (dc_error_has_error(err)) {
-        state->fatal_error = true;
-        return ERROR;
-    }
-    regcomp(state->err_redirect_regex, "[ \\t\\f\\v]2>[>]?.*", REG_EXTENDED);
+    regcomp(&err_regex, "[ \\t\\f\\v]2>[>]?.*", REG_EXTENDED);
+    state->err_redirect_regex = &err_regex;
 
     // Set the path
     state->path = get_path(env);
