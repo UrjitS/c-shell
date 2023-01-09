@@ -13,7 +13,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-
+#include "command.h"
 
 
 enum scuffed_shell_states
@@ -35,9 +35,11 @@ int separate_commands(const struct dc_env *env, struct dc_error *err, void *arg)
 int parse_commands(const struct dc_env *env, struct dc_error *err, void *arg);
 int parse_command(const struct dc_env *env, struct dc_error *err, void *arg);
 int execute_commands(const struct dc_env *env, struct dc_error *err, void *arg);
+int reset_state(const struct dc_env *env, struct dc_error *err, void *arg);
 void builtin_cd(const struct dc_env *env, struct dc_error *err, void *arg);
-int execute(const struct dc_env *env, struct dc_error *err, void *arg);
-int redirect(const struct dc_env *env, struct dc_error *err, void *arg);
+void execute(const struct dc_env *env, struct dc_error *err, void *arg);
+void redirect(const struct dc_env *env, struct dc_error *err, void *arg);
+void run(const struct dc_env *env, struct dc_error *err, struct command * command, char ** path);
 int handle_run_error(const struct dc_env *env, struct dc_error *err, void *arg);
 int do_exit(const struct dc_env *env, struct dc_error *err, void *arg);
 int do_reset_state(const struct dc_env *env, struct dc_error *err, void *arg);

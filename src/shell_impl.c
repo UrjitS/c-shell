@@ -2,17 +2,20 @@
 #include <dc_posix/dc_stdio.h>
 #include <dc_posix//dc_unistd.h>
 #include <dc_posix/dc_string.h>
-#include <dc_posix/dc_stdlib.h>
+#include <dc_posix/dc_fcntl.h>
 #include <dc_util/strings.h>
 #include <dc_util/path.h>
 #include "shell_impl.h"
 #include "command.h"
 #include "state.h"
-#include "shell.h"
 #include <unistd.h>
 #include <string.h>
+#include <stdio.h>
 #include <stdlib.h>
+#include <dc_error/error.h>
 #include <regex.h>
+#include <sys/wait.h>
+#include <fcntl.h>
 
 char *set_prompt(const struct dc_env *env);
 char **get_path(const struct dc_env *env);
@@ -262,28 +265,157 @@ void builtin_cd(const struct dc_env *env, struct dc_error *err, void *arg) {
     free(path);
 }
 
-int execute(const struct dc_env *env, struct dc_error *err, void *arg) {
-     printf("ERROR\n");
+void execute(const struct dc_env *env, struct dc_error *err, void *arg) {
+    // Get the state from arg
+    struct state * state = (struct state *) arg;
+    int status;
+    pid_t pid = 0;
+    pid = fork();
 
-     return DC_FSM_EXIT;
+    if (pid == 0) {
+
+        redirect(env, err, state);
+        if (dc_error_has_error(err)) {
+            exit(126);
+        }
+        run(env, err, state->command, state->path);
+        status = handle_run_error(env, err, state);
+        exit(status);
+    }
+
+    else {
+        waitpid(pid, &status, 0);
+        // If child exited
+        if (WIFEXITED(status)) {
+            //                         Get child exit status
+            state->command->exit_code = WEXITSTATUS(status);
+        }
+    }
 }
 
-int redirect(const struct dc_env *env, struct dc_error *err, void *arg) {
-     printf("ERROR\n");
+void redirect(const struct dc_env *env, struct dc_error *err, void *arg) {
+    // Get the state from arg
+    struct state * state = (struct state *) arg;
 
-     return DC_FSM_EXIT;
+    if (state->command->stdin_file != NULL) {
+        int fd;
+        fd = dc_open(env, err, state->command->stdin_file, O_RDWR | S_IRWXO | S_IRWXG | S_IRWXU);
+        dc_dup2(env, err, fd, STDIN_FILENO);
+        dc_close(env, err, fd);
+
+        if (dc_error_has_error(err)) {
+            state->fatal_error = true;
+            return;
+        }
+    }
+
+    if (state->command->stdout_file != NULL) {
+        int fd;
+        if (state->command->stdout_overwrite == true) {
+            fd = dc_open(env, err, state->command->stdout_file, O_CREAT | O_RDWR | O_APPEND, S_IRWXU);
+        } else {
+            fd = dc_open(env, err, state->command->stdout_file, O_CREAT | O_RDWR | O_TRUNC, S_IRWXU);
+        }
+        dc_dup2(env, err, fd, STDOUT_FILENO);
+        dc_close(env, err, fd);
+
+        if (dc_error_has_error(err)) {
+            state->fatal_error = true;
+            return;
+        }
+    }
+
+    if (state->command->stderr_file != NULL) {
+        int fd;
+        if (state->command->stderr_overwrite == true) {
+            fd = dc_open(env, err, state->command->stdout_file, O_CREAT | O_RDWR | O_APPEND, S_IRWXU);
+        } else {
+            fd = dc_open(env, err, state->command->stdout_file, O_CREAT | O_RDWR | O_TRUNC, S_IRWXU);
+        }
+        dc_dup2(env, err, fd, STDERR_FILENO);
+        dc_close(env, err, fd);
+
+        if (dc_error_has_error(err)) {
+            state->fatal_error = true;
+            return;
+        }
+    }
+
+}
+
+void run(const struct dc_env *env, struct dc_error *err, struct command * command, char ** path) {
+    if (dc_strstr(env, command->command, "/") != NULL) {
+        command->argv[0] = command->command;
+        dc_execv(env, err, command->command, command->argv);
+    } else {
+        if (path[0] == NULL) {
+            DC_ERROR_RAISE_ERRNO(err, ENONET);
+        } else {
+            for (char * new_command = *path; new_command; new_command = *path++)
+            {
+                // Set cmd to path[i]/command.command
+                dc_strcat(env, new_command, "/");
+                dc_strcat(env, new_command, command->command);
+                // Set command.argv[0] to cmd
+                command->argv[0] = new_command;
+                dc_execv(env, err, new_command, command->argv);
+                if(dc_error_has_error(err)) {
+                    if (!dc_error_is_errno(err, ENOENT)) {
+                        break;
+                    }
+                }
+            }
+        }
+    }
 }
 
 int handle_run_error(const struct dc_env *env, struct dc_error *err, void *arg) {
-     printf("ERROR\n");
+    // Get the state from arg
+    struct state * state = (struct state *) arg;
 
-     return DC_FSM_EXIT;
+    if (dc_error_is_errno(err, E2BIG)) {
+        fprintf(stderr, "[%s] Argument List Too Long\n", state->command->command);
+        return 1;
+    } else if (dc_error_is_errno(err, EACCES)) {
+        fprintf(stderr, "[%s] Permission denied\n", state->command->command);
+        return 2;
+    } else if (dc_error_is_errno(err, EINVAL)) {
+        fprintf(stderr, "[%s] Invalid Argument \n", state->command->command);
+        return 3;
+    } else if (dc_error_is_errno(err, ELOOP)) {
+        fprintf(stderr, "[%s] Too Many Symbolic Links Encountered\n", state->command->command);
+        return 4;
+    } else if (dc_error_is_errno(err, ENAMETOOLONG)) {
+        fprintf(stderr, "[%s] File Name Too Long\n", state->command->command);
+        return 5;
+    } else if (dc_error_is_errno(err, ENOENT)) {
+        fprintf(stderr, "[%s] No Such File Or Directory\n", state->command->command);
+        return 127;
+    } else if (dc_error_is_errno(err, ENOTDIR)) {
+        fprintf(stderr, "[%s] Not A Directory\n", state->command->command);
+        return 6;
+    } else if (dc_error_is_errno(err, ENOEXEC)) {
+        fprintf(stderr, "[%s] Exec Format Error\n", state->command->command);
+        return 7;
+    } else if (dc_error_is_errno(err, ENOMEM)) {
+        fprintf(stderr, "[%s] Out Of Memory\n", state->command->command);
+        return 8;
+    } else if (dc_error_is_errno(err, ETXTBSY)) {
+        fprintf(stderr, "[%s] Text File Busy\n", state->command->command);
+        return 9;
+    } else {
+        return 125;
+    }
+
 }
 
 int do_exit(const struct dc_env *env, struct dc_error *err, void *arg) {
-     printf("ERROR\n");
-
-     return DC_FSM_EXIT;
+    do_reset_state(env, err, arg);
+    return DESTROY_STATE;
+}
+int reset_state(const struct dc_env *env, struct dc_error *err, void *arg) {
+    do_reset_state(env, err, arg);
+    return READ_COMMANDS;
 }
 
 int do_reset_state(const struct dc_env *env, struct dc_error *err, void *arg) {
@@ -324,13 +456,23 @@ int do_reset_state(const struct dc_env *env, struct dc_error *err, void *arg) {
 }
 
 int handle_error(const struct dc_env *env, struct dc_error *err, void *arg) {
-     printf("ERROR\n");
+    // Get the state from arg
+    struct state * state = (struct state *) arg;
 
-     return DC_FSM_EXIT;
+    if (state->current_line == NULL) {
+        fprintf(stderr, "Internal Error %s\n", dc_error_get_message(err));
+    } else {
+        fprintf(stderr, "Internal Error %s: %s\n", dc_error_get_message(err), state->current_line);
+    }
+
+    if (state->fatal_error == true) {
+        return DESTROY_STATE;
+    }
+
+    return RESET_STATE;
 }
 
 int destroy_state(const struct dc_env *env, struct dc_error *err, void *arg) {
-     printf("ERROR\n");
-
-     return DC_FSM_EXIT;
+    do_reset_state(env, err, arg);
+    return DC_FSM_EXIT;
 }
