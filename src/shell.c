@@ -1,14 +1,11 @@
 #include "shell_impl.h"
 #include <dc_fsm/fsm.h>
 #include "shell.h"
-#include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #include "state.h"
+
 int run_shell(const struct dc_env *env, struct dc_error *err) {
-
-    printf("Hello World\n");
-
     struct dc_fsm_info *fsm_info;
     static struct dc_fsm_transition transitions[] = {
             {DC_FSM_INIT,      INIT_STATE,         init_state},

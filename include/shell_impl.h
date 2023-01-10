@@ -29,7 +29,7 @@ enum scuffed_shell_states
     DESTROY_STATE,
 };
 
-int init_state(const struct dc_env *env, struct dc_error *err, void *arg);
+int init_state(const struct dc_env *env, __attribute__((unused)) struct dc_error *err, void *arg);
 int read_commands(const struct dc_env *env, struct dc_error *err, void *arg);
 int separate_commands(const struct dc_env *env, struct dc_error *err, void *arg);
 int parse_commands(const struct dc_env *env, struct dc_error *err, void *arg);
@@ -40,10 +40,10 @@ void builtin_cd(const struct dc_env *env, struct dc_error *err, void *arg);
 void execute(const struct dc_env *env, struct dc_error *err, void *arg);
 void redirect(const struct dc_env *env, struct dc_error *err, void *arg);
 void run(const struct dc_env *env, struct dc_error *err, struct command * command, char ** path);
-int handle_run_error(const struct dc_env *env, struct dc_error *err, void *arg);
+int handle_run_error(__attribute__((unused)) const struct dc_env *env, struct dc_error *err, void *arg);
 int do_exit(const struct dc_env *env, struct dc_error *err, void *arg);
-int do_reset_state(const struct dc_env *env, struct dc_error *err, void *arg);
-int handle_error(const struct dc_env *env, struct dc_error *err, void *arg);
+int do_reset_state(__attribute__((unused)) const struct dc_env *env, struct dc_error *err, void *arg);
+int handle_error(__attribute__((unused)) const struct dc_env *env, struct dc_error *err, void *arg);
 int destroy_state(const struct dc_env *env, struct dc_error *err, void *arg);
 
 #endif //OPEN_SHELL_IMPL_H

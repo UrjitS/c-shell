@@ -1,7 +1,6 @@
 #include <wordexp.h>
 #include "shell_impl.h"
 #include "command.h"
-#include "state.h"
 #include "shell.h"
 #include <string.h>
 #include <stdlib.h>
@@ -10,7 +9,6 @@
 
 char * remove_whitespace(char * string);
 char * word_expand(const struct dc_env * env, struct dc_error * err, struct state * state, char * string);
-void set_command_arguments(const struct dc_env * env, struct dc_error * err, struct state * state, char * string);
 
 char * remove_whitespace(char * string) {
     char * duplicate_string;
@@ -49,7 +47,7 @@ char * word_expand(const struct dc_env * env, struct dc_error * err, struct stat
 }
 
 
-void regex_error(const struct dc_env * env, struct dc_error * err, struct state * state) {
+char * regex_error(const struct dc_env * env, struct dc_error * err,struct state * state, char * string) {
     regmatch_t match;
     char * str = NULL;
     int matched;
@@ -64,7 +62,7 @@ void regex_error(const struct dc_env * env, struct dc_error * err, struct state 
         str = dc_malloc(env, err, (matched_length + 1));
         if (dc_error_has_error(err)) {
             state->fatal_error = true;
-            return;
+            return NULL;
         }
 
         dc_strncpy(env, str, &state->command->line[match.rm_so], matched_length);
@@ -82,14 +80,18 @@ void regex_error(const struct dc_env * env, struct dc_error * err, struct state 
         str = remove_whitespace(str + line_cut_offset);
         // Set state.command.stderr_file to the expanded file
         state->command->stderr_file = word_expand(env, err, state, strdup(str));
-        free(str);
 
-        return;
+        char *changed_str = malloc(sizeof(char) * (unsigned long long int) match.rm_so + 1);
+        strncpy(changed_str, string, match.rm_so);
+        changed_str[match.rm_so] = '\0';
+
+        return changed_str;
     }
+    return string;
 
 }
 
-void regex_out(const struct dc_env * env, struct dc_error * err, struct state * state) {
+char * regex_out(const struct dc_env *env, struct dc_error *err,struct state *state, char* string) {
     regmatch_t match;
     char * str = NULL;
     int matched;
@@ -105,7 +107,7 @@ void regex_out(const struct dc_env * env, struct dc_error * err, struct state * 
         str = dc_malloc(env, err, (matched_length + 1));
         if (dc_error_has_error(err)) {
             state->fatal_error = true;
-            return;
+            return NULL;
         }
 
         dc_strncpy(env, str, &state->command->line[match.rm_so], matched_length);
@@ -123,13 +125,17 @@ void regex_out(const struct dc_env * env, struct dc_error * err, struct state * 
         str = remove_whitespace(str + line_cut_offset);
         // Set state.command.stdout_file to the expanded file
         state->command->stdout_file = word_expand(env, err, state, strdup(str));
-        free(str);
 
-        return;
+        char *changed_str = malloc(sizeof(char) * (unsigned long long int) match.rm_so + 1);
+        strncpy(changed_str, string, match.rm_so);
+        changed_str[match.rm_so] = '\0';
+
+        return changed_str;
     }
+    return string;
 }
 
-void regex_in(const struct dc_env * env, struct dc_error * err, struct state * state) {
+char * regex_in(const struct dc_env *env, struct dc_error *err,struct state *state, char* string) {
     regmatch_t match;
     char * str = NULL;
     int matched;
@@ -139,21 +145,25 @@ void regex_in(const struct dc_env * env, struct dc_error * err, struct state * s
     matched = regexec(state->in_redirect_regex, state->command->line,  1, &match, 0);
 
     if (matched == 0) {
+        regoff_t length = match.rm_eo - match.rm_so;
+
+        str = malloc((length + 1));
+        strncpy(str, &string[match.rm_so], length);
+        str[length] = '\0';
+
         // Remove whitespace from line
         str = remove_whitespace(str + line_cut_offset);
         // Set state.command.stdin_file to the expanded file
         state->command->stdin_file = word_expand(env, err, state, strdup(str));
-        free(str);
 
 
         // Set command.line to the cutout version
         char * cutout_string = dc_malloc(env, err, match.rm_so + 1);
         dc_strncpy(env, cutout_string, state->command->line, match.rm_so);
         cutout_string[match.rm_so] = '\0';
-        set_command_arguments(env, err, state, cutout_string);
-        return;
+        return cutout_string;
     }
-    set_command_arguments(env, err, state, state->command->line);
+    return string;
 }
 
 void set_command_arguments(const struct dc_env * env, struct dc_error * err, struct state * state, char * string) {

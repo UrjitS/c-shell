@@ -1,12 +1,11 @@
+#include "command.h"
+#include "shell_impl.h"
 #include <dc_util/filesystem.h>
 #include <dc_posix/dc_stdio.h>
 #include <dc_posix//dc_unistd.h>
 #include <dc_posix/dc_string.h>
-#include <dc_posix/dc_fcntl.h>
 #include <dc_util/strings.h>
 #include <dc_util/path.h>
-#include "shell_impl.h"
-#include "command.h"
 #include "state.h"
 #include <unistd.h>
 #include <string.h>
@@ -14,17 +13,17 @@
 #include <stdlib.h>
 #include <dc_error/error.h>
 #include <regex.h>
-#include <sys/wait.h>
 #include <fcntl.h>
+#include <sys/wait.h>
 
-char *set_prompt(const struct dc_env *env);
-char **get_path(const struct dc_env *env);
+char * set_prompt(const struct dc_env *env);
+char ** get_path(const struct dc_env *env);
 
 regex_t in_regex;
 regex_t out_regex;
 regex_t err_regex;
 
-int init_state(const struct dc_env *env, struct dc_error *err, void *arg) {
+int init_state(const struct dc_env *env, __attribute__((unused)) struct dc_error *err, void *arg) {
 
     // Get the state from arg
     struct state * state = (struct state *) arg;
@@ -76,7 +75,7 @@ char *set_prompt(const struct dc_env *env) {
     return return_prompt;
 }
 
-char **get_path(const struct dc_env *env)
+char ** get_path(const struct dc_env *env)
 {
     // Get the path and tokenize it
     char * path = dc_getenv(env, "PATH");
@@ -140,7 +139,6 @@ int read_commands(const struct dc_env *env, struct dc_error *err, void *arg) {
     state->current_line_length = line_length;
 
     return SEPARATE_COMMANDS;
-
 }
 
 int separate_commands(const struct dc_env *env, struct dc_error *err, void *arg) {
@@ -189,23 +187,27 @@ int parse_commands(const struct dc_env *env, struct dc_error *err, void *arg) {
     }
 
     return EXECUTE_COMMANDS;
-
 }
 
 int parse_command(const struct dc_env *env, struct dc_error *err, void *arg) {
     // Get the state from arg
     struct state * state = (struct state *) arg;
-    regex_error(env, err, state);
-    regex_out(env, err, state);
-    regex_in(env, err, state);
+    char * regex_error_string = regex_error(env, err, state, state->command->line);
+    char * regex_out_string = regex_out(env, err, state, regex_error_string);
+    char * regex_in_string = regex_in(env, err, state, regex_out_string);
+    set_command_arguments(env, err, state, regex_in_string);
 
     return EXECUTE_COMMANDS;
-
 }
 
 int execute_commands(const struct dc_env *env, struct dc_error *err, void *arg) {
     // Get the state from arg
     struct state * state = (struct state *) arg;
+
+    if (state->command->command == NULL) {
+        printf("Unable To Parse [%s]\n", state->command->line);
+        return RESET_STATE;
+    }
 
     if (dc_strcmp(env, state->command->command, "cd") == 0) {
         builtin_cd(env, err, state);
@@ -216,10 +218,11 @@ int execute_commands(const struct dc_env *env, struct dc_error *err, void *arg) 
     else {
         execute(env, err, state);
         if (dc_error_has_error(err)) {
-            fprintf(state->std_out, "Exit Code: %d\n", state->command->exit_code);
             state->fatal_error = true;
         }
     }
+
+    fprintf(state->std_out, "Command Exit Code: %d\n", state->command->exit_code);
 
     if (state->fatal_error == true) {
         return ERROR;
@@ -243,19 +246,19 @@ void builtin_cd(const struct dc_env *env, struct dc_error *err, void *arg) {
 
     if (dc_error_has_error(err)) {
         if (dc_error_is_errno(err, EACCES)) {
-            fprintf(state->std_out, "%s: Access Permission Denied\n", path);
+            fprintf(state->std_out, "%s: Permission Denied\n", path);
         }
         else if (dc_error_is_errno(err, ELOOP)) {
             fprintf(state->std_out, "%s: Too Many Symbolic Links Encountered\n", path);
         }
         else if (dc_error_is_errno(err, ENAMETOOLONG)) {
-            fprintf(state->std_out, "%s: Given Name Too Long\n", path);
+            fprintf(state->std_out, "%s: File Name Too Long\n", path);
         }
         else if (dc_error_is_errno(err, ENOENT)) {
-            fprintf(state->std_out, "%s: Does Not Exist\n", path);
+            fprintf(state->std_out, "%s: No Such File Or Directory\n", path);
         }
         else if (dc_error_is_errno(err, ENOTDIR)) {
-            fprintf(state->std_out, "%s: Is Not A Directory\n", path);
+            fprintf(state->std_out, "%s: Not A Directory\n", path);
         }
         state->command->exit_code = 1;
     } else {
@@ -269,11 +272,10 @@ void execute(const struct dc_env *env, struct dc_error *err, void *arg) {
     // Get the state from arg
     struct state * state = (struct state *) arg;
     int status;
-    pid_t pid = 0;
+    pid_t pid;
     pid = fork();
 
     if (pid == 0) {
-
         redirect(env, err, state);
         if (dc_error_has_error(err)) {
             exit(126);
@@ -281,13 +283,11 @@ void execute(const struct dc_env *env, struct dc_error *err, void *arg) {
         run(env, err, state->command, state->path);
         status = handle_run_error(env, err, state);
         exit(status);
-    }
+    } else {
+        waitpid(pid, &status, WUNTRACED | WCONTINUED);
 
-    else {
-        waitpid(pid, &status, 0);
-        // If child exited
         if (WIFEXITED(status)) {
-            //                         Get child exit status
+//            printf("exited, status=%d\n", WEXITSTATUS(status));
             state->command->exit_code = WEXITSTATUS(status);
         }
     }
@@ -299,7 +299,7 @@ void redirect(const struct dc_env *env, struct dc_error *err, void *arg) {
 
     if (state->command->stdin_file != NULL) {
         int fd;
-        fd = dc_open(env, err, state->command->stdin_file, O_RDWR | S_IRWXO | S_IRWXG | S_IRWXU);
+        fd =  open(state->command->stdin_file, O_RDONLY, S_IRWXO | S_IRWXG | S_IRWXU);
         dc_dup2(env, err, fd, STDIN_FILENO);
         dc_close(env, err, fd);
 
@@ -312,9 +312,9 @@ void redirect(const struct dc_env *env, struct dc_error *err, void *arg) {
     if (state->command->stdout_file != NULL) {
         int fd;
         if (state->command->stdout_overwrite == true) {
-            fd = dc_open(env, err, state->command->stdout_file, O_CREAT | O_RDWR | O_APPEND, S_IRWXU);
+            fd = open(state->command->stdout_file, O_CREAT | O_RDWR | O_TRUNC, S_IRWXO | S_IRWXG | S_IRWXU);
         } else {
-            fd = dc_open(env, err, state->command->stdout_file, O_CREAT | O_RDWR | O_TRUNC, S_IRWXU);
+            fd = open(state->command->stdout_file, O_CREAT | O_RDWR | O_APPEND, S_IRWXO | S_IRWXG | S_IRWXU);
         }
         dc_dup2(env, err, fd, STDOUT_FILENO);
         dc_close(env, err, fd);
@@ -328,9 +328,9 @@ void redirect(const struct dc_env *env, struct dc_error *err, void *arg) {
     if (state->command->stderr_file != NULL) {
         int fd;
         if (state->command->stderr_overwrite == true) {
-            fd = dc_open(env, err, state->command->stdout_file, O_CREAT | O_RDWR | O_APPEND, S_IRWXU);
+            fd = open(state->command->stdout_file, O_CREAT | O_RDWR | O_TRUNC, S_IRWXO | S_IRWXG | S_IRWXU);
         } else {
-            fd = dc_open(env, err, state->command->stdout_file, O_CREAT | O_RDWR | O_TRUNC, S_IRWXU);
+            fd = open(state->command->stdout_file, O_CREAT | O_RDWR | O_APPEND, S_IRWXO | S_IRWXG | S_IRWXU);
         }
         dc_dup2(env, err, fd, STDERR_FILENO);
         dc_close(env, err, fd);
@@ -340,7 +340,6 @@ void redirect(const struct dc_env *env, struct dc_error *err, void *arg) {
             return;
         }
     }
-
 }
 
 void run(const struct dc_env *env, struct dc_error *err, struct command * command, char ** path) {
@@ -369,44 +368,43 @@ void run(const struct dc_env *env, struct dc_error *err, struct command * comman
     }
 }
 
-int handle_run_error(const struct dc_env *env, struct dc_error *err, void *arg) {
+int handle_run_error(__attribute__((unused)) const struct dc_env *env, struct dc_error *err, void *arg) {
     // Get the state from arg
     struct state * state = (struct state *) arg;
 
     if (dc_error_is_errno(err, E2BIG)) {
-        fprintf(stderr, "[%s] Argument List Too Long\n", state->command->command);
-        return 1;
+        fprintf(stdout, "[%s] Argument List Too Long\n", state->command->command);
+        return 1; // NOLINT(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers)
     } else if (dc_error_is_errno(err, EACCES)) {
-        fprintf(stderr, "[%s] Permission denied\n", state->command->command);
-        return 2;
+        fprintf(stdout, "[%s] Permission Denied\n", state->command->command);
+        return 2; // NOLINT(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers)
     } else if (dc_error_is_errno(err, EINVAL)) {
-        fprintf(stderr, "[%s] Invalid Argument \n", state->command->command);
-        return 3;
+        fprintf(stdout, "[%s] Invalid Argument \n", state->command->command);
+        return 3; // NOLINT(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers)
     } else if (dc_error_is_errno(err, ELOOP)) {
-        fprintf(stderr, "[%s] Too Many Symbolic Links Encountered\n", state->command->command);
-        return 4;
+        fprintf(stdout, "[%s] Too Many Symbolic Links Encountered\n", state->command->command);
+        return 4; // NOLINT(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers)
     } else if (dc_error_is_errno(err, ENAMETOOLONG)) {
-        fprintf(stderr, "[%s] File Name Too Long\n", state->command->command);
-        return 5;
+        fprintf(stdout, "[%s] File Name Too Long\n", state->command->command);
+        return 5; // NOLINT(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers)
     } else if (dc_error_is_errno(err, ENOENT)) {
-        fprintf(stderr, "[%s] No Such File Or Directory\n", state->command->command);
-        return 127;
+        fprintf(stdout, "[%s] Not Found\n", state->command->command);
+        return 127; // NOLINT(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers)
     } else if (dc_error_is_errno(err, ENOTDIR)) {
-        fprintf(stderr, "[%s] Not A Directory\n", state->command->command);
-        return 6;
+        fprintf(stdout, "[%s] Not A Directory\n", state->command->command);
+        return 6; // NOLINT(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers)
     } else if (dc_error_is_errno(err, ENOEXEC)) {
-        fprintf(stderr, "[%s] Exec Format Error\n", state->command->command);
-        return 7;
+        fprintf(stdout, "[%s] Exec Format Error\n", state->command->command);
+        return 7; // NOLINT(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers)
     } else if (dc_error_is_errno(err, ENOMEM)) {
-        fprintf(stderr, "[%s] Out Of Memory\n", state->command->command);
-        return 8;
+        fprintf(stdout, "[%s] Out Of Memory\n", state->command->command);
+        return 8; // NOLINT(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers)
     } else if (dc_error_is_errno(err, ETXTBSY)) {
-        fprintf(stderr, "[%s] Text File Busy\n", state->command->command);
-        return 9;
+        fprintf(stdout, "[%s] Text File Busy\n", state->command->command);
+        return 9; // NOLINT(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers)
     } else {
-        return 125;
+        return 125; // NOLINT(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers)
     }
-
 }
 
 int do_exit(const struct dc_env *env, struct dc_error *err, void *arg) {
@@ -418,7 +416,7 @@ int reset_state(const struct dc_env *env, struct dc_error *err, void *arg) {
     return READ_COMMANDS;
 }
 
-int do_reset_state(const struct dc_env *env, struct dc_error *err, void *arg) {
+int do_reset_state(__attribute__((unused)) const struct dc_env *env, struct dc_error *err, void *arg) {
     // Get the state from arg
     struct state * state = (struct state *) arg;
 
@@ -455,7 +453,7 @@ int do_reset_state(const struct dc_env *env, struct dc_error *err, void *arg) {
     return READ_COMMANDS;
 }
 
-int handle_error(const struct dc_env *env, struct dc_error *err, void *arg) {
+int handle_error(__attribute__((unused)) const struct dc_env *env, struct dc_error *err, void *arg) {
     // Get the state from arg
     struct state * state = (struct state *) arg;
 

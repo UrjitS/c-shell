@@ -1,22 +1,14 @@
-#include <dc_application/command_line.h>
-#include <dc_application/config.h>
-#include <dc_application/options.h>
 #include <dc_env/env.h>
 #include <dc_error/error.h>
-#include <getopt.h>
-#include <stdlib.h>
-#include <dc_c/dc_stdlib.h>
-#include <dc_c/dc_string.h>
 #include <stddef.h>
 #include "shell.h"
 
 
-int main(int argc, char *argv[])
+int main(__attribute__((unused)) int argc, __attribute__((unused)) char *argv[])
 {
     dc_env_tracer tracer;
     struct dc_error * err;
     struct dc_env * env;
-    struct dc_application_info *info;
     int ret_val;
 
     // Set the tracer to trace through the function calls

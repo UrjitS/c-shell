@@ -53,8 +53,9 @@ struct command
     int exit_code;
 };
 
-void regex_error(const struct dc_env * env, struct dc_error * err, struct state * state);
-void regex_in(const struct dc_env * env, struct dc_error * err, struct state * state);
-void regex_out(const struct dc_env * env, struct dc_error * err, struct state * state);
+char * regex_error(const struct dc_env *env, struct dc_error *err,struct state *state, char * string);
+char * regex_in(const struct dc_env *env, struct dc_error *err,struct state *state, char * string);
+char * regex_out(const struct dc_env *env, struct dc_error *err,struct state *state, char * string);
+void set_command_arguments(const struct dc_env * env, struct dc_error * err, struct state * state, char * string);
 
 #endif //OPEN_COMMAND_H
