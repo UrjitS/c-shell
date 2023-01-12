@@ -238,4 +238,4 @@ install(TARGETS dc-shell DESTINATION bin)
 add_dependencies(dc-shell doxygen)
 
 find_library(LIBCGREEN cgreen REQUIRED)
-#add_subdirectory(tests)
+add_subdirectory(tests)

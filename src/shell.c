@@ -4,6 +4,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include "state.h"
+#include "input.h"
 
 int run_shell(const struct dc_env *env, struct dc_error *err) {
     struct dc_fsm_info *fsm_info;

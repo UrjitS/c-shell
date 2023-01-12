@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <regex.h>
 #include <dc_posix/dc_string.h>
+#include <ctype.h>
 
 char * remove_whitespace(char * string);
 char * word_expand(const struct dc_env * env, struct dc_error * err, struct state * state, char * string);
@@ -46,6 +47,18 @@ char * word_expand(const struct dc_env * env, struct dc_error * err, struct stat
     return expanded_string;
 }
 
+int parse_command(const struct dc_env *env, struct dc_error *err, void *arg) {
+    // Get the state from arg
+    struct state * state = (struct state *) arg;
+
+    char * regex_error_string = regex_error(env, err, state, state->command->line);
+    char * regex_out_string = regex_out(env, err, state, regex_error_string);
+    char * regex_in_string = regex_in(env, err, state, regex_out_string);
+
+    set_command_arguments(env, err, state, regex_in_string);
+
+    return EXECUTE_COMMANDS;
+}
 
 char * regex_error(const struct dc_env * env, struct dc_error * err,struct state * state, char * string) {
     regmatch_t match;
@@ -81,14 +94,13 @@ char * regex_error(const struct dc_env * env, struct dc_error * err,struct state
         // Set state.command.stderr_file to the expanded file
         state->command->stderr_file = word_expand(env, err, state, strdup(str));
 
-        char *changed_str = malloc(sizeof(char) * (unsigned long long int) match.rm_so + 1);
+        char * changed_str = malloc(sizeof(char) * (unsigned long long int) match.rm_so + 1);
         strncpy(changed_str, string, match.rm_so);
         changed_str[match.rm_so] = '\0';
 
         return changed_str;
     }
     return string;
-
 }
 
 char * regex_out(const struct dc_env *env, struct dc_error *err,struct state *state, char* string) {
@@ -126,7 +138,7 @@ char * regex_out(const struct dc_env *env, struct dc_error *err,struct state *st
         // Set state.command.stdout_file to the expanded file
         state->command->stdout_file = word_expand(env, err, state, strdup(str));
 
-        char *changed_str = malloc(sizeof(char) * (unsigned long long int) match.rm_so + 1);
+        char * changed_str = malloc(sizeof(char) * (unsigned long long int) match.rm_so + 1);
         strncpy(changed_str, string, match.rm_so);
         changed_str[match.rm_so] = '\0';
 
