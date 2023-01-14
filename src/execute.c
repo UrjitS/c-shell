@@ -47,12 +47,12 @@ void redirect(const struct dc_env *env, struct dc_error *err, void *arg) {
         int fd;
         fd =  open(state->command->stdin_file, O_RDONLY, S_IRWXO | S_IRWXG | S_IRWXU);
         dc_dup2(env, err, fd, STDIN_FILENO);
-        dc_close(env, err, fd);
-
         if (dc_error_has_error(err)) {
             state->fatal_error = true;
             return;
         }
+        dc_close(env, err, fd);
+
     }
 
     if (state->command->stdout_file != NULL) {
@@ -63,12 +63,11 @@ void redirect(const struct dc_env *env, struct dc_error *err, void *arg) {
             fd = open(state->command->stdout_file, O_CREAT | O_RDWR | O_APPEND, S_IRWXO | S_IRWXG | S_IRWXU);
         }
         dc_dup2(env, err, fd, STDOUT_FILENO);
-        dc_close(env, err, fd);
-
         if (dc_error_has_error(err)) {
             state->fatal_error = true;
             return;
         }
+        dc_close(env, err, fd);
     }
 
     if (state->command->stderr_file != NULL) {
@@ -79,12 +78,11 @@ void redirect(const struct dc_env *env, struct dc_error *err, void *arg) {
             fd = open(state->command->stdout_file, O_CREAT | O_RDWR | O_APPEND, S_IRWXO | S_IRWXG | S_IRWXU);
         }
         dc_dup2(env, err, fd, STDERR_FILENO);
-        dc_close(env, err, fd);
-
         if (dc_error_has_error(err)) {
             state->fatal_error = true;
             return;
         }
+        dc_close(env, err, fd);
     }
 }
 
@@ -103,6 +101,7 @@ void run(const struct dc_env *env, struct dc_error *err, struct command * comman
                 dc_strcat(env, new_command, command->command);
                 // Set command.argv[0] to cmd
                 command->argv[0] = new_command;
+//                execv(new_command, command->argv);
                 dc_execv(env, err, new_command, command->argv);
                 if(dc_error_has_error(err)) {
                     if (!dc_error_is_errno(err, ENOENT)) {
@@ -129,7 +128,7 @@ int handle_run_error(__attribute__((unused)) const struct dc_env *env, struct dc
         return 3; // NOLINT(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers)
     } else if (dc_error_is_errno(err, ELOOP)) {
         fprintf(stdout, "[%s] Too Many Symbolic Links Encountered\n", state->command->command);
-        return 4; // NOLINT(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers)
+        return 4; // NOLINT(cppcorstate->eguidelines-avoid-magic-numbers,readability-magic-numbers)
     } else if (dc_error_is_errno(err, ENAMETOOLONG)) {
         fprintf(stdout, "[%s] File Name Too Long\n", state->command->command);
         return 5; // NOLINT(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers)

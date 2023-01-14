@@ -9,7 +9,6 @@
 #include <unistd.h>
 #include <string.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include <dc_error/error.h>
 #include <regex.h>
 
