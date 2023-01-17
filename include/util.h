@@ -29,4 +29,4 @@ char ** get_path(const struct dc_env *env);
 void do_reset_state(__attribute__((unused)) const struct dc_env *env, struct dc_error *err, void *arg);
 
 
-#endif //OPEN_UTIL_H
+#endif

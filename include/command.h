@@ -72,7 +72,7 @@ int parse_command(const struct dc_env *env, struct dc_error *err, void *arg);
  * @param string The string to run the regex on.
  * @return The altered or same string after running regexc() and expanding.
  */
-char * regex_error(const struct dc_env *env, struct dc_error *err,struct state *state, char *string);
+char * regex_error(const struct dc_env *env, struct dc_error *err, struct state *state, char *string);
 
 /**
  * Runs the in regex ([ \t\f\v]<.*) on the line returned from regex_out.
@@ -83,7 +83,7 @@ char * regex_error(const struct dc_env *env, struct dc_error *err,struct state *
  * @param string The string to run the regex on.
  * @return The altered or same string after running regexc() and expanding.
  */
-char * regex_in(const struct dc_env *env, struct dc_error *err,struct state *state, char *string);
+char * regex_in(const struct dc_env *env, struct dc_error *err, struct state *state, char *string);
 
 /**
  * Runs the out regex ([ \t\f\v][1^2]?>[>]?.*) on the line returned from regex_error.
@@ -94,7 +94,7 @@ char * regex_in(const struct dc_env *env, struct dc_error *err,struct state *sta
  * @param string The string to run the regex on.
  * @return The altered or same string after running regexc() and expanding.
  */
-char * regex_out(const struct dc_env *env, struct dc_error *err,struct state *state, char *string);
+char * regex_out(const struct dc_env *env, struct dc_error *err, struct state *state, char *string);
 
 /**
  * Expands the requested files (i.e. *.txt -> a.txt, b.txt ...).
@@ -108,4 +108,4 @@ char * regex_out(const struct dc_env *env, struct dc_error *err,struct state *st
  */
 void set_command_arguments(const struct dc_env *env, struct dc_error *err, struct state *state, char *string);
 
-#endif //OPEN_COMMAND_H
+#endif

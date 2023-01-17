@@ -17,4 +17,4 @@
  */
 void builtin_cd(const struct dc_env *env, struct dc_error *err, void *arg);
 
-#endif //OPEN_BUILTINS_H
+#endif

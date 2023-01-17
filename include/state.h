@@ -43,7 +43,7 @@ struct state {
     /**
      *  The longest possible command line
      */
-    long max_line_length;
+    long max_line_length; // NOLINT(Wattributes)
     /**
      * The current command line
      */
@@ -51,7 +51,7 @@ struct state {
     /**
      *  The length of the current command line
      */
-    size_t current_line_length;
+    size_t current_line_length; // NOLINT(Wattributes)
     /**
      *  The command to execute
      */
@@ -62,4 +62,5 @@ struct state {
     bool fatal_error;
 };
 
-#endif //OPEN_STATE_H
+
+#endif

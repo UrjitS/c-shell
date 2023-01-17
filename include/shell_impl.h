@@ -107,4 +107,4 @@ int handle_error(__attribute__((unused)) const struct dc_env *env, struct dc_err
  */
 int destroy_state(const struct dc_env *env, struct dc_error *err, void *arg);
 
-#endif //OPEN_SHELL_IMPL_H
+#endif

@@ -46,4 +46,4 @@ void run(const struct dc_env *env, struct dc_error *err, struct command * comman
  */
 int handle_run_error(__attribute__((unused)) const struct dc_env *env, struct dc_error *err, void *arg);
 
-#endif //OPEN_EXECUTE_H
+#endif

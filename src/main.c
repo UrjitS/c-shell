@@ -4,7 +4,7 @@
 #include "shell.h"
 
 
-int main(__attribute__((unused)) int argc, __attribute__((unused)) char *argv[])
+int main(int argc, char *argv[]) // NOLINT(Wunused-parameter)
 {
     dc_env_tracer tracer;
     struct dc_error * err;
@@ -18,7 +18,6 @@ int main(__attribute__((unused)) int argc, __attribute__((unused)) char *argv[])
     err = dc_error_create(false); // Create error struct
     env = dc_env_create(err, false, tracer); // Create environment struct
 
-    dc_error_init(err, false); // Initialize error struct
     dc_env_set_tracer(env, tracer); // Set tracer
 
     ret_val = run_shell(env, err);
