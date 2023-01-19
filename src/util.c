@@ -24,26 +24,33 @@ char * set_prompt(const struct dc_env *env) {
     return return_prompt;
 }
 
-char ** get_path(const struct dc_env *env)
+char ** get_path(const struct dc_env *env, struct dc_error *err, struct state * state)
 {
     // Get the path and tokenize it
     char * path = dc_getenv(env, "PATH");
     const char * delim = ":";
     char * tokenized_path = strtok(path, delim);
-    unsigned rows = 0;
+
+    size_t row_index = 0;
     char ** array = NULL;
 
     // loop through tokenized path and assemble an array
-    while (tokenized_path) {
-        array = realloc(array, (rows + 1) * sizeof(array));
-        array[rows] = malloc(strlen(tokenized_path) + 1);
-        strcpy(array[rows], tokenized_path);
-        rows++;
-        tokenized_path = strtok(NULL, delim);
+    while ((tokenized_path = strtok(NULL, delim))) {
+        // Re size path array
+        array = dc_realloc(env, err, array, (row_index + 1) * sizeof(array));
+        if (dc_error_has_error(err)) {
+            state->fatal_error = true;
+            return NULL;
+        }
+        // Malloc
+        array[row_index] = dc_malloc(env, err, strlen(tokenized_path) + 1);
+        if (dc_error_has_error(err)) {
+            state->fatal_error = true;
+            return NULL;
+        }
+        dc_strcpy(env, array[row_index], tokenized_path);
+        row_index++;
     }
-
-    array = realloc(array, (rows + 1) * sizeof(array));
-    array[rows] = NULL;
 
     return array;
 }
@@ -82,5 +89,4 @@ void do_reset_state(__attribute__((unused)) const struct dc_env *env, struct dc_
 
     state->command = NULL;
     dc_error_reset(err);
-
 }

@@ -1,15 +1,15 @@
 #include "tests.h"
 #include "util.h"
-#include <dc_posix/dc_stdlib.h>
 #include <dc_c/dc_stdlib.h>
-#include "dc_env/env.h"
-#include "dc_error/error.h"
+#include <dc_env/env.h>
+#include <dc_error/error.h>
+#include <dc_posix/dc_stdlib.h>
 
 Describe(util);
 
-static dc_env_tracer tracer;
-static struct dc_env *env;
-static struct dc_error * err;
+static dc_env_tracer tracer; // NOLINT(cppcoreguidelines-avoid-non-const-global-variables)
+static struct dc_env *env; // NOLINT(cppcoreguidelines-avoid-non-const-global-variables)
+static struct dc_error * err; // NOLINT(cppcoreguidelines-avoid-non-const-global-variables)
 
 BeforeEach(util)
 {
@@ -18,7 +18,6 @@ BeforeEach(util)
     err = dc_error_create(false); // Create error struct
     env = dc_env_create(err, false, tracer); // Create environment struct
 
-    dc_error_init(err, false); // Initialize error struct
     dc_env_set_tracer(env, tracer); // Set tracer
 
 }

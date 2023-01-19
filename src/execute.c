@@ -1,9 +1,8 @@
 #include "execute.h"
 
-#include "command.h"
 #include "shell_impl.h"
 #include <dc_util/filesystem.h>
-#include <dc_posix//dc_unistd.h>
+#include <dc_posix/dc_unistd.h>
 #include "state.h"
 #include <unistd.h>
 #include <string.h>
@@ -113,7 +112,7 @@ void run(const struct dc_env *env, struct dc_error *err, struct command * comman
     }
 }
 
-int handle_run_error(__attribute__((unused)) const struct dc_env *env, struct dc_error *err, void *arg) {
+int handle_run_error(const struct dc_env *env, struct dc_error *err, void *arg) {
     // Get the state from arg
     struct state * state = (struct state *) arg;
 

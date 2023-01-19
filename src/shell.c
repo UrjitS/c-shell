@@ -8,7 +8,7 @@
 
 int run_shell(const struct dc_env *env, struct dc_error *err) {
     struct dc_fsm_info *fsm_info;
-    static struct dc_fsm_transition transitions[] = {
+    struct dc_fsm_transition transitions[] = {
             {DC_FSM_INIT,      INIT_STATE,         init_state},
             {INIT_STATE,       READ_COMMANDS,      read_commands},
             {INIT_STATE,       ERROR,              handle_error},

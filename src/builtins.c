@@ -1,6 +1,4 @@
 #include "builtins.h"
-#include "command.h"
-#include <dc_util/filesystem.h>
 #include <dc_posix//dc_unistd.h>
 #include <dc_util/path.h>
 #include "state.h"

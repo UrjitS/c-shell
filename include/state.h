@@ -1,11 +1,60 @@
 #ifndef OPEN_STATE_H
 #define OPEN_STATE_H
 
-#include "command.h"
+
 #include <regex.h>
 #include <stdbool.h>
 #include <stdio.h>
-#include <dc_env/env.h>
+
+
+/**
+ * Stores all the information needed to perform a command
+ * (i.e. command, arguments for that command, in/out files ...)
+ */
+struct command
+{
+    /**
+     * Command line for this command
+     */
+    char * line;
+    /**
+     * The command (e.g. ls, exit, cd, cat)
+     */
+    char * command;
+    /**
+     * The number of arguments passed to the command
+     */
+    size_t argc;
+    /**
+     *  The arguments passed to the command
+     */
+    char ** argv;
+    /**
+     * The file to redirect stdin from or NULL
+     */
+    char * stdin_file;
+    /**
+     * The file to redirect stdout from or NULL
+     */
+    char * stdout_file;
+    /**
+     * Append to or truncate the stdout file
+     */
+    bool stdout_overwrite;
+    /**
+     * The file to redirect stderr to, or NULL
+     */
+    char * stderr_file;
+    /**
+     * Append to or truncate the stderr file
+     */
+    bool stderr_overwrite;
+    /**
+     *  The status returned from the command
+     */
+    int exit_code;
+};
+
 
 /**
  * Stores the state of the shell
@@ -43,7 +92,7 @@ struct state {
     /**
      *  The longest possible command line
      */
-    long max_line_length; // NOLINT(Wattributes)
+    size_t max_line_length; // NOLINT(Wattributes)
     /**
      * The current command line
      */
@@ -61,6 +110,5 @@ struct state {
      */
     bool fatal_error;
 };
-
 
 #endif

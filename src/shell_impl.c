@@ -1,6 +1,4 @@
-#include "command.h"
 #include "shell_impl.h"
-#include <dc_util/filesystem.h>
 #include <dc_posix/dc_string.h>
 #include "state.h"
 #include "execute.h"
@@ -10,6 +8,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <dc_error/error.h>
+#include <dc_posix/dc_unistd.h>
 #include <regex.h>
 
 
@@ -25,21 +24,27 @@ int init_state(const struct dc_env *env, __attribute__((unused)) struct dc_error
     struct state * state = (struct state *) arg;
 
     // Set maximum line length
-    state->max_line_length = sysconf(_SC_ARG_MAX);
+    state->max_line_length = dc_sysconf(env, err, _SC_ARG_MAX);
+    if (dc_error_has_error(err)) {
+        state->fatal_error = true;
+        return ERROR;
+    }
 
     // Set all the in_regex values
-    regcomp(&in_regex, "[ \\t\\f\\v]<.*", REG_EXTENDED);
+    regcomp(&in_regex, "[ \t\f\v]<.*", REG_EXTENDED);
     state->in_redirect_regex = &in_regex;
 
-    regcomp(&out_regex, "[ \\t\\f\\v][1^2]?>[>]?.*", REG_EXTENDED);
+    regcomp(&out_regex, "[ \t\f\v][1^2]?>[>]?.*", REG_EXTENDED);
     state->out_redirect_regex = &out_regex;
 
-    regcomp(&err_regex, "[ \\t\\f\\v]2>[>]?.*", REG_EXTENDED);
+    regcomp(&err_regex, "[ \t\f\v]2>[>]?.*", REG_EXTENDED);
     state->err_redirect_regex = &err_regex;
 
     // Set the path
-    state->path = get_path(env);
-
+    state->path = get_path(env, err, state);
+    if (state->fatal_error) {
+        return ERROR;
+    }
     // Set the prompt
     state->prompt = set_prompt(env);
 

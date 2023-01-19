@@ -1,6 +1,5 @@
 #include "input.h"
 
-#include "command.h"
 #include "shell_impl.h"
 #include <dc_util/filesystem.h>
 #include <dc_posix/dc_stdio.h>
