@@ -55,6 +55,27 @@ char ** get_path(const struct dc_env *env, struct dc_error *err, struct state * 
     return array;
 }
 
+char * string_cat(const struct dc_env *env, struct dc_error *err, const char * string_one, const char * string_two)
+{
+    char * result_string = NULL;
+    size_t string_one_length, string_two_length;
+
+    if(string_one && string_two)
+    {
+        // Get the strings length
+        string_one_length = strlen(string_one);
+        string_two_length = strlen(string_two);
+        // Set the result string to the new size
+        result_string = dc_malloc(env, err, (string_one_length + string_two_length + 1));
+
+        dc_memcpy(env, result_string, string_one, string_one_length);
+        dc_memcpy(env, result_string + string_one_length, string_two, string_two_length);
+        // Set last character to term byte
+        result_string[(string_one_length + string_two_length)] = '\0';
+    }
+
+    return result_string;
+}
 
 void do_reset_state(__attribute__((unused)) const struct dc_env *env, struct dc_error *err, void *arg) {
     // Get the state from arg
@@ -62,14 +83,16 @@ void do_reset_state(__attribute__((unused)) const struct dc_env *env, struct dc_
 
     state->fatal_error = false;
     state->current_line_length = 0;
-    state->current_line = NULL;
-    free(state->current_line);
 
     if (state->command != NULL) {
         for (size_t i = 0; i < state->command->argc; i++) {
             free(state->command->argv[i]);
-            state->command->argv[i] = NULL;
         }
+        free(state->command->command);
+        free(state->command->stdin_file);
+        free(state->command->stdout_file);
+        free(state->command->stderr_file);
+
         state->command->argc = 0;
         state->command->exit_code = 0;
 
@@ -80,13 +103,8 @@ void do_reset_state(__attribute__((unused)) const struct dc_env *env, struct dc_
         state->command->stdout_file = NULL;
         state->command->stderr_file = NULL;
 
-        free(state->command->line);
-        free(state->command->command);
-        free(state->command->stdin_file);
-        free(state->command->stdout_file);
-        free(state->command->stderr_file);
     }
-
+    free(state->command);
     state->command = NULL;
     dc_error_reset(err);
 }

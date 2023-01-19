@@ -61,17 +61,6 @@ struct command
  * (i.e. in/out files, path, lines, commands to execute)
  */
 struct state {
-    /**
-     * Input file
-     */
-    FILE * std_in;
-    /**
-     * Output file
-     */
-    FILE * std_out;
-    /**
-     * Used to find input redirection: < path
-     */
     regex_t * in_redirect_regex;
     /**
      * Used to find output redirection: [1]>[>] path

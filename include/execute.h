@@ -44,6 +44,6 @@ void run(const struct dc_env *env, struct dc_error *err, struct command * comman
  * @param arg The state object.
  * @return Error Code.
  */
-int handle_run_error(__attribute__((unused)) const struct dc_env *env, struct dc_error *err, void *arg);
+int handle_run_error(__attribute__((unused)) __attribute__((unused)) const struct dc_env *env, struct dc_error *err, void *arg);
 
 #endif

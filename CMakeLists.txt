@@ -7,11 +7,12 @@ project(dc-shell
 
 set(CMAKE_C_STANDARD 17)
 
-if (DEFINED ENV{DC_BUILD_SANITIZE})
-    set(SANITIZE $ENV{DC_BUILD_SANITIZE})
-else ()
-    set(SANITIZE FALSE)
-endif ()
+#if (DEFINED ENV{DC_BUILD_SANITIZE})
+#    set(SANITIZE $ENV{DC_BUILD_SANITIZE})
+#else ()
+#    set(SANITIZE FALSE)
+#endif ()
+set(SANITIZE TRUE)
 
 set(SOURCE_DIR ${PROJECT_SOURCE_DIR}/src)
 set(INCLUDE_DIR ${PROJECT_SOURCE_DIR}/include)

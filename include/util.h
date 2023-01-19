@@ -23,6 +23,16 @@ char * set_prompt(const struct dc_env *env);
 char ** get_path(const struct dc_env *env, struct dc_error *err, struct state * state);
 
 /**
+ * Concatenate two strings and get the result.
+ * @param env The environment.
+ * @param err The error object.
+ * @param string_one The first string to concatenate.
+ * @param string_two The second string to concatenate.
+ * @return A new string with the two strings concatenated together.
+ */
+char * string_cat(const struct dc_env *env, struct dc_error *err, const char * string_one, const char * string_two);
+
+/**
  * Resets the state for the next read, freeing any dynamic memory.
  *
  * @param env The environment.

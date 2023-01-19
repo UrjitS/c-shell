@@ -1,5 +1,5 @@
 #include "execute.h"
-
+#include "util.h"
 #include "shell_impl.h"
 #include <dc_util/filesystem.h>
 #include <dc_posix/dc_unistd.h>
@@ -85,7 +85,7 @@ void redirect(const struct dc_env *env, struct dc_error *err, void *arg) {
     }
 }
 
-void run(const struct dc_env *env, struct dc_error *err, struct command * command, char ** path) {
+void run(const struct dc_env * env, struct dc_error * err, struct command * command, char ** path) {
     if (dc_strstr(env, command->command, "/") != NULL) {
         command->argv[0] = command->command;
         dc_execv(env, err, command->command, command->argv);
@@ -93,17 +93,18 @@ void run(const struct dc_env *env, struct dc_error *err, struct command * comman
         if (path[0] == NULL) {
             DC_ERROR_RAISE_ERRNO(err, ENONET);
         } else {
-            for (char * new_command = *path; new_command; new_command = *path++)
+            for (size_t i = 0; i < strlen(*path); ++i)
             {
                 // Set cmd to path[i]/command.command
-                dc_strcat(env, new_command, "/");
-                dc_strcat(env, new_command, command->command);
-                // Set command.argv[0] to cmd
-                command->argv[0] = new_command;
-//                execv(new_command, command->argv);
-                dc_execv(env, err, new_command, command->argv);
+                char * dest = string_cat(env, err, path[i], "/");
+                dest = string_cat(env, err, dest, command->command);
+                command->argv[0] = dest;
+                // Execute command
+                dc_execv(env, err, dest, command->argv);
+                // Check if command worked
                 if(dc_error_has_error(err)) {
                     if (!dc_error_is_errno(err, ENOENT)) {
+                        free(dest);
                         break;
                     }
                 }
@@ -112,7 +113,7 @@ void run(const struct dc_env *env, struct dc_error *err, struct command * comman
     }
 }
 
-int handle_run_error(const struct dc_env *env, struct dc_error *err, void *arg) {
+int handle_run_error(__attribute__((unused)) const struct dc_env * env, struct dc_error * err, void * arg) { // NOLINT(Wunused-parameter)
     // Get the state from arg
     struct state * state = (struct state *) arg;
 

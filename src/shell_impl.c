@@ -22,6 +22,7 @@ int init_state(const struct dc_env *env, __attribute__((unused)) struct dc_error
 
     // Get the state from arg
     struct state * state = (struct state *) arg;
+    memset(state, 0, sizeof(struct state));
 
     // Set maximum line length
     state->max_line_length = dc_sysconf(env, err, _SC_ARG_MAX);
@@ -52,8 +53,6 @@ int init_state(const struct dc_env *env, __attribute__((unused)) struct dc_error
     state->current_line = NULL;
     state->command = NULL;
     state->current_line_length = 0;
-    state->std_in = stdin;
-    state->std_out = stdout;
 
     return READ_COMMANDS;
 }
@@ -130,7 +129,7 @@ int execute_commands(const struct dc_env *env, struct dc_error *err, void *arg) 
         }
     }
 
-    fprintf(state->std_out, "Command Exit Code: %d\n", state->command->exit_code);
+    fprintf(stdout, "Command Exit Code: %d\n", state->command->exit_code);
 
     if (state->fatal_error == true) {
         return ERROR;

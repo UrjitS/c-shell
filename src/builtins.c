@@ -22,19 +22,19 @@ void builtin_cd(const struct dc_env *env, struct dc_error *err, void *arg) {
 
     if (dc_error_has_error(err)) {
         if (dc_error_is_errno(err, EACCES)) {
-            fprintf(state->std_out, "%s: Permission Denied\n", path);
+            fprintf(stdout, "%s: Permission Denied\n", path);
         }
         else if (dc_error_is_errno(err, ELOOP)) {
-            fprintf(state->std_out, "%s: Too Many Symbolic Links Encountered\n", path);
+            fprintf(stdout, "%s: Too Many Symbolic Links Encountered\n", path);
         }
         else if (dc_error_is_errno(err, ENAMETOOLONG)) {
-            fprintf(state->std_out, "%s: File Name Too Long\n", path);
+            fprintf(stdout, "%s: File Name Too Long\n", path);
         }
         else if (dc_error_is_errno(err, ENOENT)) {
-            fprintf(state->std_out, "%s: No Such File Or Directory\n", path);
+            fprintf(stdout, "%s: No Such File Or Directory\n", path);
         }
         else if (dc_error_is_errno(err, ENOTDIR)) {
-            fprintf(state->std_out, "%s: Not A Directory\n", path);
+            fprintf(stdout, "%s: Not A Directory\n", path);
         }
         state->command->exit_code = 1;
     } else {

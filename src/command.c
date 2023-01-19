@@ -40,7 +40,7 @@ char * word_expand(const struct dc_env * env, struct dc_error * err, struct stat
             state->fatal_error = true;
             return string;
         }
-        dc_strcpy(env, expanded_string, exp.we_wordv[0]);
+        expanded_string = dc_strdup(env, err, exp.we_wordv[0]);
     }
 
     wordfree(&exp);
@@ -57,6 +57,7 @@ int parse_command(const struct dc_env *env, struct dc_error *err, void *arg) {
 
     set_command_arguments(env, err, state, regex_in_string);
 
+    free(regex_error_string);
     return EXECUTE_COMMANDS;
 }
 
@@ -190,6 +191,7 @@ void set_command_arguments(const struct dc_env * env, struct dc_error * err, str
         state->command->argv = dc_calloc(env, err, exp.we_wordc + 2, sizeof(char*));
         if (dc_error_has_error(err)) {
             wordfree(&exp);
+            free(state->command->argv);
             state->fatal_error = true;
             return;
         }
@@ -199,6 +201,7 @@ void set_command_arguments(const struct dc_env * env, struct dc_error * err, str
             state->command->argv[i] = dc_strdup(env, err, exp.we_wordv[i]);
             if (dc_error_has_error(err)) {
                 wordfree(&exp);
+                free(state->command->argv);
                 state->fatal_error = true;
                 return;
             }
@@ -207,6 +210,7 @@ void set_command_arguments(const struct dc_env * env, struct dc_error * err, str
         state->command->command = dc_strdup(env, err, exp.we_wordv[0]);
         if (dc_error_has_error(err)) {
             wordfree(&exp);
+            free(state->command->argv);
             state->fatal_error = true;
             return;
         }
