@@ -17,10 +17,10 @@ char * set_prompt(const struct dc_env *env);
  *
  * @param env The environment.
  * @param err The error object.
- * @param arg The state object.
+ * @param state The state object.
  * @return The PATH env var.
  */
-char ** get_path(const struct dc_env *env, struct dc_error *err, struct state * state);
+void get_path(const struct dc_env *env, struct dc_error *err, struct state * state);
 
 /**
  * Concatenate two strings and get the result.

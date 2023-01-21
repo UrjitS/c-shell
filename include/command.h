@@ -5,9 +5,7 @@
 #include <stdbool.h>
 #include "state.h"
 
-
-
-/**
+/*
  * Parse the command. Take the command->line and use it to fill in all of the fields.
  *
  * @param env The environment
@@ -17,8 +15,7 @@
  */
 int parse_command(const struct dc_env *env, struct dc_error *err, void *arg);
 
-
-/**
+/*
  * Runs the error regex ([ \t\f\v]2>[>]?.*) on the line read from user.
  *
  * @param env The environment
@@ -29,7 +26,7 @@ int parse_command(const struct dc_env *env, struct dc_error *err, void *arg);
  */
 char * regex_error(const struct dc_env *env, struct dc_error *err, struct state *state, char *string);
 
-/**
+/*
  * Runs the in regex ([ \t\f\v]<.*) on the line returned from regex_out.
  *
  * @param env The environment
@@ -40,7 +37,7 @@ char * regex_error(const struct dc_env *env, struct dc_error *err, struct state 
  */
 char * regex_in(const struct dc_env *env, struct dc_error *err, struct state *state, char *string);
 
-/**
+/*
  * Runs the out regex ([ \t\f\v][1^2]?>[>]?.*) on the line returned from regex_error.
  *
  * @param env The environment
@@ -51,7 +48,7 @@ char * regex_in(const struct dc_env *env, struct dc_error *err, struct state *st
  */
 char * regex_out(const struct dc_env *env, struct dc_error *err, struct state *state, char *string);
 
-/**
+/*
  * Expands the requested files (i.e. *.txt -> a.txt, b.txt ...).
  * Sets the state->commands argc and argv to the values from wordexp() and sets the state->command->command to the
  * finalized string.

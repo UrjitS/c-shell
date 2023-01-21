@@ -78,6 +78,7 @@ struct state {
      * Prompt to display to the user, defaults to $
      */
     char * prompt;
+    size_t path_size;
     /**
      *  The longest possible command line
      */

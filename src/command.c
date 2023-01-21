@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <regex.h>
 #include <dc_posix/dc_string.h>
+#include <dc_posix/dc_wordexp.h>
 #include <ctype.h>
 
 char * remove_whitespace(char * string);
@@ -35,7 +36,7 @@ char * word_expand(const struct dc_env * env, struct dc_error * err, struct stat
     status = wordexp(string, &exp, 0);
 
     if (status == 0) {
-        expanded_string = dc_malloc(env, err, strlen(exp.we_wordv[0]));
+//        dc_malloc(env, err, strlen(exp.we_wordv[0]));
         if (dc_error_has_error(err)) {
             state->fatal_error = true;
             return string;
@@ -57,7 +58,6 @@ int parse_command(const struct dc_env *env, struct dc_error *err, void *arg) {
 
     set_command_arguments(env, err, state, regex_in_string);
 
-    free(regex_error_string);
     return EXECUTE_COMMANDS;
 }
 
@@ -89,7 +89,6 @@ char * regex_error(const struct dc_env * env, struct dc_error * err,struct state
             state->command->stderr_overwrite = true;
             line_cut_offset++;
         }
-
         // Remove whitespace from line
         str = remove_whitespace(str + line_cut_offset);
         // Set state.command.stderr_file to the expanded file
@@ -138,7 +137,6 @@ char * regex_out(const struct dc_env *env, struct dc_error *err,struct state *st
         str = remove_whitespace(str + line_cut_offset);
         // Set state.command.stdout_file to the expanded file
         state->command->stdout_file = word_expand(env, err, state, strdup(str));
-
         char * changed_str = malloc(sizeof(char) * (unsigned long long int) match.rm_so + 1);
         strncpy(changed_str, string, match.rm_so);
         changed_str[match.rm_so] = '\0';
@@ -168,7 +166,6 @@ char * regex_in(const struct dc_env *env, struct dc_error *err,struct state *sta
         str = remove_whitespace(str + line_cut_offset);
         // Set state.command.stdin_file to the expanded file
         state->command->stdin_file = word_expand(env, err, state, strdup(str));
-
 
         // Set command.line to the cutout version
         char * cutout_string = dc_malloc(env, err, match.rm_so + 1);

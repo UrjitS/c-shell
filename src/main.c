@@ -1,6 +1,7 @@
 #include <dc_env/env.h>
 #include <dc_error/error.h>
 #include <stddef.h>
+#include <stdlib.h>
 #include "shell.h"
 
 
@@ -21,6 +22,9 @@ int main(int argc, char *argv[]) // NOLINT(Wunused-parameter)
     dc_env_set_tracer(env, tracer); // Set tracer
 
     ret_val = run_shell(env, err);
+
+    free(err);
+    free(env);
 
     return ret_val;
 }

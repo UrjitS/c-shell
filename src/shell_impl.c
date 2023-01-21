@@ -1,16 +1,15 @@
-#include "shell_impl.h"
-#include <dc_posix/dc_string.h>
-#include "state.h"
-#include "execute.h"
 #include "builtins.h"
+#include "execute.h"
+#include "shell_impl.h"
+#include "state.h"
 #include "util.h"
-#include <unistd.h>
-#include <string.h>
-#include <stdio.h>
 #include <dc_error/error.h>
+#include <dc_posix/dc_string.h>
 #include <dc_posix/dc_unistd.h>
 #include <regex.h>
-
+#include <stdio.h>
+#include <string.h>
+#include <unistd.h>
 
 regex_t in_regex;
 regex_t out_regex;
@@ -22,7 +21,7 @@ int init_state(const struct dc_env *env, __attribute__((unused)) struct dc_error
 
     // Get the state from arg
     struct state * state = (struct state *) arg;
-    memset(state, 0, sizeof(struct state));
+    dc_memset(env, state, 0, sizeof(struct state));
 
     // Set maximum line length
     state->max_line_length = dc_sysconf(env, err, _SC_ARG_MAX);
@@ -42,7 +41,7 @@ int init_state(const struct dc_env *env, __attribute__((unused)) struct dc_error
     state->err_redirect_regex = &err_regex;
 
     // Set the path
-    state->path = get_path(env, err, state);
+    get_path(env, err, state);
     if (state->fatal_error) {
         return ERROR;
     }
@@ -139,7 +138,7 @@ int execute_commands(const struct dc_env *env, struct dc_error *err, void *arg) 
 }
 
 int do_exit(const struct dc_env *env, struct dc_error *err, void *arg) {
-    do_reset_state(env, err, arg);
+    destroy_state(env, err, arg);
     return DESTROY_STATE;
 }
 
@@ -165,7 +164,44 @@ int handle_error(__attribute__((unused)) const struct dc_env *env, struct dc_err
     return RESET_STATE;
 }
 
-int destroy_state(const struct dc_env *env, struct dc_error *err, void *arg) {
-    do_reset_state(env, err, arg);
+int destroy_state(const struct dc_env *env, struct dc_error *err, void *arg) { // NOLINT(Wunused-parameter)
+    struct state *states;
+    states = (struct state*) arg;
+    // Free Command Struct
+    if (states->command != NULL) {
+        free(states->command->line);
+        states->command->line = NULL;
+
+        free(states->command->command);
+
+        for (size_t i = 0; i < states->command->argc; i++) {
+            free(states->command->argv[i]);
+            states->command->argv[i] = NULL;
+        }
+        if (states->command->argv != NULL) {
+            free(states->command->argv);
+        }
+        free(states->command->stdin_file);
+        states->command->stdin_file = NULL;
+        free(states->command->stdout_file);
+        states->command->stdout_file = NULL;
+        free(states->command->stderr_file);
+        states->command->stderr_file = NULL;
+    }
+    // Free State Struct
+    free(states->prompt);
+    states->prompt = NULL;
+    free(states->current_line);
+    states->current_line = NULL;
+    free(states->command);
+    states->command = NULL;
+    if (states->path != NULL) {
+        for (size_t i = 0; i < states->path_size; ++i)
+        {
+            free(states->path[i]);
+        }
+        free(states->path);
+    }
+    states->path = NULL;
     return DC_FSM_EXIT;
 }
