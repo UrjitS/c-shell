@@ -34,7 +34,7 @@ void redirect(const struct dc_env *env, struct dc_error *err, void *arg);
  * @param command The command struct.
  * @param path The array of PATH directories to search for the program.
  */
-void run(const struct dc_env *env, struct dc_error *err, struct command * command, char ** path);
+void run(const struct dc_env *env, struct dc_error *err, struct command * command, char ** path, size_t path_size);
 
 /**
  * Display the error message when a process fails.

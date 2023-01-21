@@ -53,11 +53,7 @@ void get_path(const struct dc_env *env, struct dc_error *err, struct state * sta
         row_index++;
     }
     state->path_size = row_index;
-//    state->path = dc_realloc(env, err, state->path, (row_index + 1) * sizeof(state->path));
-//    state->path[row_index] = NULL;
-//    state->path = (char **)malloc(sizeof(char *)*row_index);
-//    memmove(state->path, state->path, row_index);
-//    state->path = array;
+
 }
 
 char * string_cat(const struct dc_env *env, struct dc_error *err, const char * string_one, const char * string_two)
@@ -78,7 +74,6 @@ char * string_cat(const struct dc_env *env, struct dc_error *err, const char * s
         // Set last character to term byte
         result_string[(string_one_length + string_two_length)] = '\0';
     }
-
     return result_string;
 }
 
@@ -96,27 +91,24 @@ void do_reset_state(__attribute__((unused)) const struct dc_env *env, struct dc_
         free(state->command->line);
         state->command->line = NULL;
         free(state->command->command);
-        state->command->command = NULL;
-        state->command->argc = 0;
         for (size_t i = 0; i < state->command->argc; i++) {
             free(state->command->argv[i]);
             state->command->argv[i] = NULL;
         }
-        free(state->command->argv);
-        state->command->argv = NULL;
+        if (state->command->argv != NULL) {
+            free(state->command->argv);
+        }
+
         free(state->command->stdin_file);
         state->command->stdin_file = NULL;
         free(state->command->stdout_file);
         state->command->stdout_file = NULL;
+        free(state->command->stderr_file);
         state->command->stderr_file = NULL;
         state->command->exit_code = 0;
     }
     free(state->command);
     state->command = NULL;
+
     dc_error_reset(err);
-    state->fatal_error = false;
-    state->current_line_length = 0;
-
-
-//    dc_error_reset(err);
 }

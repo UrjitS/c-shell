@@ -187,6 +187,7 @@ int destroy_state(const struct dc_env *env, struct dc_error *err, void *arg) { /
         states->command->stdout_file = NULL;
         free(states->command->stderr_file);
         states->command->stderr_file = NULL;
+        states->command->exit_code = 0;
     }
     // Free State Struct
     free(states->prompt);

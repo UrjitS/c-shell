@@ -35,7 +35,6 @@ int run_shell(const struct dc_env *env, struct dc_error *err) {
     {
         // Create a state to pass around
         struct state state;
-//        state = malloc(sizeof(struct state *));
 
         int from_state;
         int to_state;

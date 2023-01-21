@@ -25,14 +25,13 @@ void execute(const struct dc_env *env, struct dc_error *err, void *arg) {
         if (dc_error_has_error(err)) {
             exit(126);
         }
-        run(env, err, state->command, state->path);
+        run(env, err, state->command, state->path, state->path_size);
         status = handle_run_error(env, err, state);
         exit(status);
     } else {
         waitpid(pid, &status, WUNTRACED | WCONTINUED);
 
         if (WIFEXITED(status)) {
-//            printf("exited, status=%d\n", WEXITSTATUS(status));
             state->command->exit_code = WEXITSTATUS(status);
         }
     }
@@ -97,7 +96,7 @@ void redirect(const struct dc_env *env, struct dc_error *err, void *arg) {
     }
 }
 
-void run(const struct dc_env * env, struct dc_error * err, struct command * command, char ** path) {
+void run(const struct dc_env * env, struct dc_error * err, struct command * command, char ** path, size_t path_size) {
     if (dc_strstr(env, command->command, "/") != NULL) {
         command->argv[0] = command->command;
         dc_execv(env, err, command->command, command->argv);
@@ -105,18 +104,19 @@ void run(const struct dc_env * env, struct dc_error * err, struct command * comm
         if (path[0] == NULL) {
             DC_ERROR_RAISE_ERRNO(err, ENONET);
         } else {
-            for (size_t i = 0; i < strlen(*path); ++i)
+            for (size_t i = 0; i < path_size; i++)
             {
                 // Set cmd to path[i]/command.command
                 char * dest = string_cat(env, err, path[i], "/");
-                dest = string_cat(env, err, dest, command->command);
-                command->argv[0] = dest;
+                char * dest2 = string_cat(env, err, dest, command->command);
+                command->argv[0] = dest2;
                 // Execute command
-                dc_execv(env, err, dest, command->argv);
+                execv(dest2, command->argv);
+                free(dest);
+                free(dest2);
                 // Check if command worked
                 if(dc_error_has_error(err)) {
                     if (!dc_error_is_errno(err, ENOENT)) {
-                        free(dest);
                         break;
                     }
                 }
@@ -160,6 +160,7 @@ int handle_run_error(__attribute__((unused)) const struct dc_env * env, struct d
         fprintf(stdout, "[%s] Text File Busy\n", state->command->command); // NOLINT(cert-err33-c)
         return 9; // NOLINT(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers)
     } else {
+        fprintf(stdout, "[%s] Not Found\n", state->command->command); // NOLINT(cert-err33-c)
         return 125; // NOLINT(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers)
     }
 }
