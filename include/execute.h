@@ -23,17 +23,18 @@ void execute(const struct dc_env *env, struct dc_error *err, void *arg);
  * @param env The environment
  * @param err The error object
  * @param arg The state object
- */
+*/
 void redirect(const struct dc_env *env, struct dc_error *err, void *arg);
 
 /**
- * Runs a process.
- *
- * @param env The environment.
- * @param err The error object.
- * @param command The command struct.
- * @param path The array of PATH directories to search for the program.
- */
+  *  Runs a process.
+  *
+  * @param env The environment.
+  * @param err The error object.
+  * @param command The command struct.
+  * @param path The array of PATH directories to search for the program.
+  * @param path_size The size of the PATH array
+*/
 void run(const struct dc_env *env, struct dc_error *err, struct command * command, char ** path, size_t path_size);
 
 /**
@@ -44,6 +45,6 @@ void run(const struct dc_env *env, struct dc_error *err, struct command * comman
  * @param arg The state object.
  * @return Error Code.
  */
-int handle_run_error(__attribute__((unused)) __attribute__((unused)) const struct dc_env *env, struct dc_error *err, void *arg);
+int handle_run_error(__attribute__((unused)) const struct dc_env *env, struct dc_error *err, void *arg);
 
 #endif

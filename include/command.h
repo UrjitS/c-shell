@@ -1,8 +1,6 @@
 #ifndef OPEN_COMMAND_H
 #define OPEN_COMMAND_H
 
-#include <stdlib.h>
-#include <stdbool.h>
 #include "state.h"
 
 /*

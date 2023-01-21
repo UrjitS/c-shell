@@ -6,18 +6,32 @@
 #include <stdlib.h>
 #include <regex.h>
 #include <dc_posix/dc_string.h>
-#include <dc_posix/dc_wordexp.h>
 #include <ctype.h>
 
-char * remove_whitespace(char * string);
-char * word_expand(const struct dc_env * env, struct dc_error * err, struct state * state, char * string);
+/**
+ * Removes leading whitespaces from the given string
+ * @param string String to remove leading whitespaces from
+ * @return Same string without leading spaces
+ */
+char * remove_leading_whitespace(char * string);
+/**
+ * Expands the given string
+ * @param env Environment object.
+ * @param err Error object.
+ * @param string String to expand.
+ * @return Expanded string.
+ */
+char * word_expand(const struct dc_env * env, struct dc_error * err, char * string);
 
-char * remove_whitespace(char * string) {
+char * remove_leading_whitespace(char * string) {
+    // Duplicate the string
     char * duplicate_string;
     duplicate_string = string;
 
+    // Loop through and check for any spaces
     while (*duplicate_string != '\0') {
         if (isspace(*duplicate_string))
+            // If space go to next character
             duplicate_string++;
         else {
             string = duplicate_string;
@@ -28,22 +42,18 @@ char * remove_whitespace(char * string) {
     return string;
 }
 
-char * word_expand(const struct dc_env * env, struct dc_error * err, struct state * state, char * string) {
+char * word_expand(const struct dc_env * env, struct dc_error * err, char * string) {
     wordexp_t exp;
     int status;
     char * expanded_string;
-
+    // Expand string
     status = wordexp(string, &exp, 0);
 
     if (status == 0) {
-//        dc_malloc(env, err, strlen(exp.we_wordv[0]));
-        if (dc_error_has_error(err)) {
-            state->fatal_error = true;
-            return string;
-        }
+        // Set expanded string
         expanded_string = dc_strdup(env, err, exp.we_wordv[0]);
     }
-
+    // Free resources
     wordfree(&exp);
     return expanded_string;
 }
@@ -51,11 +61,13 @@ char * word_expand(const struct dc_env * env, struct dc_error * err, struct stat
 int parse_command(const struct dc_env *env, struct dc_error *err, void *arg) {
     // Get the state from arg
     struct state * state = (struct state *) arg;
-
+    // Run input string through error regex
     char * regex_error_string = regex_error(env, err, state, state->command->line);
+    // Run error string through the out regex
     char * regex_out_string = regex_out(env, err, state, regex_error_string);
+    // Run out string through in regex
     char * regex_in_string = regex_in(env, err, state, regex_out_string);
-
+    // Set command arguments
     set_command_arguments(env, err, state, regex_in_string);
 
     return EXECUTE_COMMANDS;
@@ -90,11 +102,11 @@ char * regex_error(const struct dc_env * env, struct dc_error * err,struct state
             line_cut_offset++;
         }
         // Remove whitespace from line
-        str = remove_whitespace(str + line_cut_offset);
+        str = remove_leading_whitespace(str + line_cut_offset);
         // Set state.command.stderr_file to the expanded file
-        state->command->stderr_file = word_expand(env, err, state, strdup(str));
+        state->command->stderr_file = word_expand(env, err, strdup(str));
 
-        char * changed_str = malloc(sizeof(char) * (unsigned long long int) match.rm_so + 1);
+        char * changed_str = malloc(match.rm_so + 1);
         strncpy(changed_str, string, match.rm_so);
         changed_str[match.rm_so] = '\0';
 
@@ -134,10 +146,10 @@ char * regex_out(const struct dc_env *env, struct dc_error *err,struct state *st
         }
 
         // Remove whitespace from line
-        str = remove_whitespace(str + line_cut_offset);
+        str = remove_leading_whitespace(str + line_cut_offset);
         // Set state.command.stdout_file to the expanded file
-        state->command->stdout_file = word_expand(env, err, state, strdup(str));
-        char * changed_str = malloc(sizeof(char) * (unsigned long long int) match.rm_so + 1);
+        state->command->stdout_file = word_expand(env, err, strdup(str));
+        char * changed_str = malloc(match.rm_so + 1);
         strncpy(changed_str, string, match.rm_so);
         changed_str[match.rm_so] = '\0';
 
@@ -163,9 +175,9 @@ char * regex_in(const struct dc_env *env, struct dc_error *err,struct state *sta
         str[length] = '\0';
 
         // Remove whitespace from line
-        str = remove_whitespace(str + line_cut_offset);
+        str = remove_leading_whitespace(str + line_cut_offset);
         // Set state.command.stdin_file to the expanded file
-        state->command->stdin_file = word_expand(env, err, state, strdup(str));
+        state->command->stdin_file = word_expand(env, err, strdup(str));
 
         // Set command.line to the cutout version
         char * cutout_string = dc_malloc(env, err, match.rm_so + 1);
@@ -180,6 +192,7 @@ void set_command_arguments(const struct dc_env * env, struct dc_error * err, str
     wordexp_t exp;
     int status;
 
+    // Expand the final string
     status = wordexp(string, &exp, 0);
 
     if (status == 0) {
@@ -203,7 +216,7 @@ void set_command_arguments(const struct dc_env * env, struct dc_error * err, str
                 return;
             }
         }
-
+        // Copy over the command
         state->command->command = dc_strdup(env, err, exp.we_wordv[0]);
         if (dc_error_has_error(err)) {
             wordfree(&exp);
@@ -211,6 +224,7 @@ void set_command_arguments(const struct dc_env * env, struct dc_error * err, str
             state->fatal_error = true;
             return;
         }
+        // Free resources
         wordfree(&exp);
     }
 }

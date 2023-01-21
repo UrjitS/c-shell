@@ -13,13 +13,15 @@ void builtin_cd(const struct dc_env *env, struct dc_error *err, void *arg) {
 
     char * path;
     if (state->command->argv[1] == NULL) {
+        // Set path to home and change directories
         dc_expand_path(env, err, &path, "~/");
         dc_chdir(env, err, path);
     } else {
+        // Set path to given location and change directories
         dc_chdir(env, err, state->command->argv[1]);
         path = strdup(state->command->argv[1]);
     }
-
+    // Check for errors when changing directories
     if (dc_error_has_error(err)) {
         if (dc_error_is_errno(err, EACCES)) {
             fprintf(stdout, "%s: Permission Denied\n", path);
@@ -40,6 +42,6 @@ void builtin_cd(const struct dc_env *env, struct dc_error *err, void *arg) {
     } else {
         state->command->exit_code = 0;
     }
-
+    // Free resources
     free(path);
 }

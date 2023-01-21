@@ -26,13 +26,13 @@ int read_commands(const struct dc_env *env, struct dc_error *err, void *arg) {
     fprintf(stdout, "[%s] %s", current_directory, state->prompt);
 
     // Read Line
-
     dc_getline(env, err, &state->current_line, &line_length, stdin);
     if (dc_error_has_error(err)) {
         state->fatal_error = true;
         return ERROR;
     }
 
+    // Trim the input
     dc_str_trim(env, state->current_line);
     line_length = dc_strlen(env, state->current_line);
 
@@ -44,6 +44,7 @@ int read_commands(const struct dc_env *env, struct dc_error *err, void *arg) {
     // Set line length to state object
     state->current_line_length = line_length;
 
+    // Free memory
     free(current_directory);
 
     return SEPARATE_COMMANDS;

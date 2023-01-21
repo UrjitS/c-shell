@@ -42,18 +42,19 @@ void get_path(const struct dc_env *env, struct dc_error *err, struct state * sta
             state->fatal_error = true;
             return;
         }
-        // Malloc
+        // Malloc size for path string
         state->path[row_index] = dc_malloc(env, err, strlen(tokenized_path) + 1);
         if (dc_error_has_error(err)) {
             free(state->path);
             state->fatal_error = true;
             return;
         }
+        // Copy path string into state->path
         dc_strcpy(env, state->path[row_index], tokenized_path);
         row_index++;
     }
+    // Store the size of the path
     state->path_size = row_index;
-
 }
 
 char * string_cat(const struct dc_env *env, struct dc_error *err, const char * string_one, const char * string_two)
@@ -81,12 +82,12 @@ void do_reset_state(__attribute__((unused)) const struct dc_env *env, struct dc_
 
     // Get the state from arg
     struct state * state = (struct state *) arg;
-
+    // Reset State struct parameters
     state->fatal_error = false;
     free(state->current_line);
     state->current_line = NULL;
     state->current_line_length = 0;
-
+    // Reset Command struct parameters
     if (state->command != NULL) {
         free(state->command->line);
         state->command->line = NULL;
@@ -109,6 +110,6 @@ void do_reset_state(__attribute__((unused)) const struct dc_env *env, struct dc_
     }
     free(state->command);
     state->command = NULL;
-
+    // Reset Error struct
     dc_error_reset(err);
 }

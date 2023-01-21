@@ -109,7 +109,7 @@ int parse_commands(const struct dc_env *env, struct dc_error *err, void *arg) {
 int execute_commands(const struct dc_env *env, struct dc_error *err, void *arg) {
     // Get the state from arg
     struct state * state = (struct state *) arg;
-
+    // Check if parse commands worked
     if (state->command->command == NULL) {
         printf("Unable To Parse [%s]\n", state->command->line);
         return RESET_STATE;
@@ -127,7 +127,7 @@ int execute_commands(const struct dc_env *env, struct dc_error *err, void *arg) 
             state->fatal_error = true;
         }
     }
-
+    // Print out the exit status code
     fprintf(stdout, "Command Exit Code: %d\n", state->command->exit_code);
 
     if (state->fatal_error == true) {
@@ -138,11 +138,13 @@ int execute_commands(const struct dc_env *env, struct dc_error *err, void *arg) 
 }
 
 int do_exit(const struct dc_env *env, struct dc_error *err, void *arg) {
+    // Destroy state and command struct
     destroy_state(env, err, arg);
     return DESTROY_STATE;
 }
 
 int reset_state(const struct dc_env *env, struct dc_error *err, void *arg) {
+    // Reset state and command struct to defaults
     do_reset_state(env, err, arg);
     return READ_COMMANDS;
 }
@@ -150,13 +152,13 @@ int reset_state(const struct dc_env *env, struct dc_error *err, void *arg) {
 int handle_error(__attribute__((unused)) const struct dc_env *env, struct dc_error *err, void *arg) {
     // Get the state from arg
     struct state * state = (struct state *) arg;
-
+    // Display any error message
     if (state->current_line == NULL) {
         fprintf(stderr, "Internal Error %s\n", dc_error_get_message(err));
     } else {
         fprintf(stderr, "Internal Error %s: %s\n", dc_error_get_message(err), state->current_line);
     }
-
+    // If fatal error has been encountered free memory and exit program
     if (state->fatal_error == true) {
         return DESTROY_STATE;
     }

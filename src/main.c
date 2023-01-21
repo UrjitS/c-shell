@@ -21,8 +21,10 @@ int main(int argc, char *argv[]) // NOLINT(Wunused-parameter)
 
     dc_env_set_tracer(env, tracer); // Set tracer
 
+    // Run Shell
     ret_val = run_shell(env, err);
 
+    // Free memory
     free(err);
     free(env);
 

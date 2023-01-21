@@ -22,9 +22,9 @@ enum scuffed_shell_states
 
 /**
  * Set up the initial state:
- *  - in_redirect_regex   ""
- *  - in_redirect_regex   ""
- *  - in_redirect_regex   ""
+ *  - in_redirect_regex   "[ \t\f\v]<.*"
+ *  - in_redirect_regex   "[ \t\f\v][1^2]?>[>]?.*"
+ *  - in_redirect_regex   "[ \t\f\v]2>[>]?.*"
  *  - path the PATH env var seperated into directories
  *  - prompt the PS1 env var or "$" if PS1 not set
  *  - max_line_length the value of _SC_ARG_MAX (see sysconf)
