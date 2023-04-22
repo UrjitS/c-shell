@@ -5,6 +5,8 @@ scuffed_shell is a simple Unix shell that supports:
 - running simple commands
 - redirecting stdin, stdout, and stderr
 
+Documentation for the shell can be found [here](https://drive.google.com/drive/folders/12Tg4KIyXlM2VgQ2s6malkj_UPyYp9oTh?usp=sharing).
+
 ## Installing
 
 ### Prerequisites
@@ -65,3 +67,11 @@ The following command types are not supported:
 - Functions
 
 ## Examples
+### Startup
+![Alt text](./examples/startup.png "Startup")
+### Cat command 
+![Alt text](./examples/cat.png "Cat command")
+### Multiple commands
+![Alt text](./examples/multi.png "Multiple commands")
+### Exit
+![Alt text](./examples/exit.png "Exit")
